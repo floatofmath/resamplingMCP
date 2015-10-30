@@ -1,0 +1,133 @@
+# Analysis of neuroscience data
+
+
+```{r data import,eval=F}
+library(gMCP)
+library(flip)
+library(mvtnorm)
+library(xtable)
+library(resamplingMCP)
+library(plyr)
+library(dplyr)
+data(neuroscience)
+
+```
+
+```{r set up graph,eval=F}
+mat <- kronecker(diag(4),matrix(1/4,5,5)-diag(1/4,5))
+rownames(mat) <- paste0(rep(toupper(letters[1:4]),each=5),rep(1:5,4))
+colnames(mat) <- paste0(rep(toupper(letters[1:4]),each=5),rep(1:5,4))
+weights <- rep(1/20,20)
+names(weights) <- paste0(rep(toupper(letters[1:4]),each=5),rep(1:5,4))
+
+eps <- .0001
+upd <- 1/5
+
+mat[c('A4','A3'),] <- mat[c('A4','A3'),] * (1-2* upd)
+mat[matrix(c('A4','B5','A4','B1','A3','B1','A3','B5'),nc=2,byrow=T)] <- upd
+mat[c('B5','B1'),] <- mat[c('B5','B1'),] * (1-2* upd)
+mat[matrix(c('B5','A4','B1','A4','B1','A3','B5','A3'),nc=2,byrow=T)] <- upd
+
+mat[c('C4','C3'),] <- mat[c('C4','C3'),] * (1-2*upd)
+mat[c('D5','D1'),] <- mat[c('D5','D1'),] * (1-2*upd)
+mat[matrix(c('C4','D5','C4','D1','C3','D1','C3','D5'),nc=2,byrow=T)] <- upd
+mat[matrix(c('D5','C4','D1','C4','D1','C3','D5','C3'),nc=2,byrow=T)] <- upd
+
+trans <- c(c('A4'='A7','A5'='A8','B5'='B7','B1'='B3','B3'='B5','B2'='B4','B4'='B6','B5'='B7'),
+           c('C4'='C7','C5'='C8','D5'='D7','D1'='D3','D3'='D5','D2'='D4','D4'='D6','D5'='D7'))
+
+colnames(mat)[colnames(mat) %in% names(trans)] <- trans[colnames(mat)[colnames(mat) %in% names(trans)]]
+rownames(mat) <- colnames(mat)
+names <- colnames(mat)
+
+gmatL <- mat[grep("A|B",names),grep("A|B",names)]
+gmatR <- mat[grep("C|D",names),grep("C|D",names)]
+
+groups <- kronecker(diag(2)[2:1,],kronecker(diag(2),matrix(eps,5,5))+kronecker(diag(2)[2:1,],matrix(eps,5,5)))
+
+
+epSum <- rowSums(groups)
+gmat <- mat*(1-epSum) + groups
+rowSums(gmat)
+rowSums(gmatL)
+rowSums(gmatR)
+
+
+brainGraph <- matrix2graph(gmat,rep(1/20,20))
+brainGraphLeft <- matrix2graph(gmatL,rep(1/10,10))
+brainGraphRight <- matrix2graph(gmatR,rep(1/10,10)) 
+
+
+```
+
+
+```{r test,eval=F}
+subY <- Y[,-grep("HbO",colnames(Y))]
+colnames(subY) <- gsub("\\.Hb","",colnames(subY))
+
+
+subYLeft <- subY[,grep("A|B",colnames(subY))]
+subYRight <- subY[,grep("C|D",colnames(subY))]
+
+left=flip(subYLeft,perms=10000,tail=-1)
+right=flip(subYRight,perms=10000,tail=-1)
+gleft <- gMCfliP(left,brainGraphLeft,comb.funct='fisher')
+gright <- gMCfliP(right,brainGraphRight,comb.funct='fisher')
+gmcpright <- gMCP(brainGraphRight,right@res$`p-value`,test='Simes')
+hommelright <- gMCP(brainGraphRight,right@res$`p-value`)
+fright <- flip.adjust(right)
+
+
+gright
+gmcpp <- gmcpright@adjPValues
+names(gmcpp) <- names(gmcpright@rejected)
+hommelp <- hommelright@adjPValues
+names(hommelp) <- names(hommelright@rejected)
+wfmaxtp <- fright@res[['Adjust:maxT']]
+names(wfmaxtp) <- rownames(fright@res)
+
+results <- rbind(gmcpp,hommelp,wfmaxtp,gright)
+rownames(results) <- c("Bonferroni","Simes","maxT","fisher")
+tab <- xtable(t(results),digits=3)
+print.xtable(tab)
+
+```
+```{r,eval=F}
+
+m <- rbind(H1=c(0, 0, 1, 0),
+           H2=c(0, 0, 0, 1),
+           H3=c(0, 1, 0, 0),
+           H4=c(1, 0, 0, 0))
+weights <- c(0.5, 0.5, 0, 0)
+graph <- new("graphMCP", m=m, weights=weights)
+
+ncpL <- list('Scenario 1'=c(3.0, 3.0, 1.0, 1.0),
+             'Scenario 2'=c(0.0, 3.0, 0.0, 1.0),
+             'Scenario 3'=c(1.5, 3.0, 0.5, 1.0))
+
+f <- list()
+
+corr.sim <- rbind(c(1, 1/2, .3, .15),
+                  c(1/2, 1, .15, .3),
+                  c(.3, .15, 1, 1/2),
+                  c(.15, .3, 1/2, 1))
+
+corr.test <- rbind(c(1, 1/2, NA, NA),
+                  c(1/2, 1, NA, NA),
+                  c(NA, NA, 1, 1/2),
+                  c(NA, NA, 1/2, 1))
+
+
+g <- simpleSuccessiveI()
+set.seed(1234)
+
+df <- c()
+result <- calcPower(graph=g, mean=ncpL, f=f, type="quasirandom", corr.sim=corr.sim, alpha=0.025, n.sim=10000)
+df <- rbind(df, matrix(unlist(result), nrow=3, byrow=TRUE))
+presult <- calcPower(graph=g, mean=ncpL, f=f, type="quasirandom", corr.sim=corr.sim, corr.test=corr.test,alpha=0.025, n.sim=10000)
+df <- rbind(df, matrix(unlist(presult), nrow=3, byrow=TRUE))
+colnames(df) <- c(paste0('H',1:4),names(presult[[3]])[2:4])
+print(round(df,3))
+
+
+```

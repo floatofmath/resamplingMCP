@@ -1,0 +1,57 @@
+# Some simulations
+
+```{r load packages,eval=F}
+library(gMCP)
+library(flip)
+library(mvtnorm)
+source('../R/functions.R')
+
+
+```
+
+```{r first example,eval=F}
+## set up correlation in terms of parallel group sampling model
+## covariance matrix correlation of 1/3 between endpoints
+S <- (kronecker(matrix(1/3,2,2),diag(3))+diag(2/3,6))
+## correlation of z-scores
+C <- kronecker(diag(2),cbind(-1,diag(2)))/sqrt(2)
+R <- C %*% S %*% t(C)
+## effect with only one treatment
+
+
+
+## generate data from
+## randomization model
+S <- diag(2/3,2)+1/3
+
+n <- 10
+Y <- rmvnorm(3*n,sigma=S)
+colnames(Y) <- c('E1','E2')
+
+## treatment labels
+X <- rep(0:2,each=10)
+## treatment 1 is effective in endpoint 1
+Y[X==1,'E1'] <- Y[X==1,'E1']+1
+
+
+## simple Succesive test
+G <- simpleSuccessiveI()
+
+## z-scores & pvalues
+z_scores <- pw_zstat(Y,X,control=0)
+p_values <- as.numeric(pnorm(z_scores,lower=FALSE))
+
+
+## graph based tests
+gMCP(G,p_values)
+gMCP(G,p_values,test='Simes')
+gMCP(G,p_values,test='parametric',correlation = R)
+
+test <- function(Y){
+    as.numeric(pw_zstat(Y,X))
+}
+
+flip(Y,X,statTest=test)
+
+
+```

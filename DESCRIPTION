@@ -2,8 +2,14 @@ Package: resamplingMCP
 Title: Resampling graph-based multiple comparison procedures
 Version: 0.1
 Authors.R: "Florian Klinglmueller <float@lefant.net> [aut, cre]"
-Description: Resampling and permutation tests for graph-based multiple comparison procedures
-Depends: R (>= 3.1.2), flip (>= 2.4.4), gMCP (>= 0.8-11)
+Description: Resampling and permutation tests for graph-based multiple
+    comparison procedures
+Depends:
+    R (>= 3.1.2),
+    flip (>= 2.4.3),
+    gMCP (>= 0.8-11),
+    matrixStats
 License: MIT
 LazyData: true
-Suggests: testthat
+Suggests:
+    testthat
