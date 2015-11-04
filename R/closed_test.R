@@ -96,6 +96,8 @@ closure <- function(p,A){
 ##' @return adjusted p-value
 ##' 
 ##' @author Florian Klinglmueller
+##'
+##' @export
 closed_pval <- function(i,p,m=log2(length(p)+1)){
     max(sapply(contains(i,m),function(J) p[J]))
 }
@@ -109,6 +111,7 @@ closed_pval <- function(i,p,m=log2(length(p)+1)){
 ##' @return logical whether hypothesis can be rejected at FWER level \code{alpha}
 ##'
 ##' @author Florian Klinglmueller
+##' @export
 closed_test  <- function(i,p,m=log2(length(p)+1),alpha=.025){
     all(lapply(contains(i,m),function(J) p[J] <= alpha))
 }

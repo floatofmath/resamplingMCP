@@ -3,10 +3,10 @@
 ##' @template matrix_stats_details
 ##' 
 ##' @title Difference of means
-##'
-##' @export
 ##' 
 ##' @author Florian Klinglmueller
+##'
+##' @export
 meandiff <- function(x,g){
     if(is.matrix(g)){
         if(is.matrix(x)){
@@ -21,6 +21,25 @@ meandiff <- function(x,g){
 }
 
 
+##' Matrix computation of sum of differences between two groups
+##'
+##' @template matrix_stats_details
+##'
+##' @title Sum of differences
+##' @author Florian Klinglmueller
+##' @export
+sumdiff <- function(x,g,...){
+    if(is.matrix(x)){
+        if(is.matrix(g)){
+            stop("Only one of g or x may be passed as a matrix")
+        }
+        colSums(x[g>0,]-x[g<=0,])
+    } else if(is.matrix(g)){
+        (x %*% {g>0})-(x %*% {g<0})
+    } else {
+        x*(g>0) - x*(g<=0)
+    }
+}
 
 
 ##' Matrix computation of pooled variances for two groups
@@ -28,8 +47,9 @@ meandiff <- function(x,g){
 ##' @template matrix_stats_details
 ##' 
 ##' @title Pooled variances
-##' @export
 ##' @author Florian Klinglmueller
+##'
+##' @export
 pooled_variance <- function(x,g){
     require(matrixStats)
     if(is.matrix(g)){
@@ -51,8 +71,9 @@ pooled_variance <- function(x,g){
 ##' @template matrix_stats_details
 ##' @param one_sample Whether a one or two sample test should be performed
 ##' @title z-scores
-##' @export
 ##' @author Florian Klinglmueller
+##'
+##' @export
 zstat <- function(x,g,sigma=1,one_sample=FALSE){
     if(one_sample){
         if(is.matrix(x)){
@@ -70,8 +91,9 @@ zstat <- function(x,g,sigma=1,one_sample=FALSE){
 ##' @template matrix_stats_details
 ##' @param one_sample Whether a one or two sample test should be performed
 ##' @title t-statistics
-##' @export
 ##' @author Florian Klinglmueller
+##'
+##' @export
 tstat <- function(x,g,one_sample=FALSE){
     if(one_sample){
         if(is.matrix(x)){
@@ -91,8 +113,8 @@ tstat <- function(x,g,one_sample=FALSE){
 ##' @param stat function that computes the test statistic
 ##' @param control Label that defines the control group
 ##' @title Pairwise (many-to-one) statistics
-##' @export
 ##' @author Florian Klinglmueller
+##' @export
 pw_stat <- function(x,g,stat,control=0,...){
     levels = unique(g[g!=control])
     if(is.matrix(g)){
@@ -123,8 +145,9 @@ pw_stat <- function(x,g,stat,control=0,...){
 ##' @template matrix_stats_details
 ##' @param control Label that defines the control group
 ##' @title Pairwise (many-to-one) mean differences
-##' @export
 ##' @author Florian Klinglmueller
+##'
+##' @export
 pw_meandiff <- function(x,g,control=0){
     pw_stat(x,g,meandiff,control)
 }
@@ -136,8 +159,9 @@ pw_meandiff <- function(x,g,control=0){
 ##' @template matrix_stats_details
 ##' @param control Label that defines the control group
 ##' @title Pairwise (many-to-one) z-scores
-##' @export
 ##' @author Florian Klinglmueller
+##'
+##' @export
 pw_zstat <- function(x,g,control=0,sigma=1){
     pw_stat(x,g,zstat,control,sigma=sigma)
 }
@@ -147,8 +171,9 @@ pw_zstat <- function(x,g,control=0,sigma=1){
 ##' @template matrix_stats_details
 ##' @param control Label that defines the control group
 ##' @title Pairwise (many-to-one) t-statistics
-##' @export
 ##' @author Florian Klinglmueller
+##'
+##' @export
 pw_tstat <- function(x,g,control=0){
     pw_stat(x,g,tstat,control)
 }

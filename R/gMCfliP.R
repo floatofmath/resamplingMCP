@@ -8,8 +8,9 @@
 ##'
 ##' @importFrom flip npc
 ##' @importFrom gMCP generateWeights
-##' @export
 ##' @author Florian Klinglmueller
+##'
+##' @export
 gMCfliP <- function(permTP,G,...){
     weights <- gMCP:::generateWeights(G@m,G@weights)
     n2 <- ncol(weights)
