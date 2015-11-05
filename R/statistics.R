@@ -12,7 +12,7 @@ meandiff <- function(x,g){
         if(is.matrix(x)){
             stop("Only one of g or x may be passed as a matrix")
         }
-        (x %*% {g>0})/colSums({g>0}) - (x%*%({g<=0}))/colSums({g<=0})
+        as.numeric((x %*% {g>0})/colSums({g>0}) - ((x %*% {g<=0})/colSums({g<=0})))
     } else if(is.matrix(x)){
         colMeans(x[g>0,]) - colMeans(x[g<=0,])
     } else {
@@ -21,7 +21,7 @@ meandiff <- function(x,g){
 }
 
 
-##' Matrix computation of sum of differences between two groups
+##' Matrix computation of difference of sums between two groups
 ##'
 ##' @template matrix_stats_details
 ##'
@@ -30,14 +30,14 @@ meandiff <- function(x,g){
 ##' @export
 sumdiff <- function(x,g,...){
     if(is.matrix(x)){
-        if(is.matrix(g)){
-            stop("Only one of g or x may be passed as a matrix")
+        if(length(dim(g))>1){
+            stop("Only one of g orx may be passed as a matrix")
         }
-        colSums(x[g>0,]-x[g<=0,])
-    } else if(is.matrix(g)){
-        (x %*% {g>0})-(x %*% {g<0})
+        colSums(x[g>0,])- colSums(x[g<=0,])
+    } else if(length(dim(g))>1){
+        colSums(x * {g>0}) - colSums(x * {g<=0})
     } else {
-        x*(g>0) - x*(g<=0)
+        sum(x*(g>0)) - sum(x*(g<=0))
     }
 }
 
@@ -52,8 +52,14 @@ sumdiff <- function(x,g,...){
 ##' @export
 pooled_variance <- function(x,g){
     require(matrixStats)
-    if(is.matrix(g)){
-        stop("Pooled variances not yet implemented for matrix treatment assignments")
+    if(length(dim(g))>1){
+        n1 <- colSums(g>0)
+        n2 <- colSums(g<=0)
+        x1 <- x * (g>0)
+        x1[g<=0] <- NA
+        x2 <- x * (g<=0)
+        x2[g>0] <- NA
+        ((n1-1)*colVars(x1,na.rm=T)+(n1-1)*colVars(x2,na.rm=T))/(n1+n2-2)
     } else if(is.matrix(x)){
         n1 <- sum(g>0)
         n2 <- sum(g<=0)
@@ -64,6 +70,7 @@ pooled_variance <- function(x,g){
         ((n1-1)*var(x[g>0])+(n2-1)*var(x[g<=0]))/(n1+n2-2)
     }
 }
+
 
 
 ##' Matrix computation of z-scores
@@ -82,7 +89,11 @@ zstat <- function(x,g,sigma=1,one_sample=FALSE){
             mean(x)/sigma*sqrt(nrow(x))
         }
     } else {
-        meandiff(x,g)/(sigma*sqrt(1/sum(g>0)+1/sum(g<=0)))
+        if(is.matrix(g)){
+            meandiff(x,g)/(sigma*sqrt(1/colSums(g>0)+1/colSums(g<=0)))
+        } else {
+            meandiff(x,g)/(sigma*sqrt(1/sum(g>0)+1/sum(g<=0)))
+        }
     }
 }
 
@@ -117,7 +128,7 @@ tstat <- function(x,g,one_sample=FALSE){
 ##' @export
 pw_stat <- function(x,g,stat,control=0,...){
     levels = unique(g[g!=control])
-    if(is.matrix(g)){
+    if(length(dim(g))>1){
         if(is.matrix(x)){
             stop('Vectorized rerandomization not implemented for matrix outcomes')
         }

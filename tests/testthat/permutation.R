@@ -3,7 +3,33 @@ context("Permutation Spaces")
 n1 <- 9
 g1 <- sample(c(1,-1),n1,rep=T)
 
+test_that("All (re)assignments",
+          {
+              k <- 4
+              o <- all_reassignments(n1,k)
+              uo <- all_assignments(n1)
+              expect_equal(dim(o),c(n1,choose(n1,k)))
+              expect_equal(k,unique(colSums(o)))
+              expect_equal(dim(uo),c(n1,2^n1))
+              expect_less_than(max(colSums(uo)),n1+1)
+              B <- 100
+              ro <- random_reassignments(n1,k,B)
+              expect_equal(dim(ro),c(n1,B))
+              expect_equal(k,unique(colSums(ro)))
+              ruo <- random_assignments(n1,B)
+              expect_equal(dim(ruo),c(n1,B))
+          })
 
+
+test_that("Stratified (re)assignment",
+          {
+              ns <- c(5,4,3,2)
+              ks <- c(3,2,1,1)
+              o <- strat_reassignments(ns,ks)
+              expect_equal(dim(o),c(sum(ns),prod(choose(ns,ks))))
+              expect_equal(sum(ks),unique(colSums(o)))
+              expect_equal(ks,sapply(list(colSums(o[1:5,]),colSums(o[6:9,]),colSums(o[10:12,]),colSums(o[13:14,])),unique))
+          })
 
 test_that("Omega one stage, restricted",
           {
@@ -16,13 +42,14 @@ test_that("Omega one stage, restricted",
 
 test_that("Omega one stage unrestricted",
           {
+              B <- 11
               o2 <- omega(g1,restricted=FALSE)
-              expect_equal(nrow(o2),2^length(g1))
-              expect_equal(ncol(o2),length(g1))
+              expect_equal(ncol(o2),2^length(g1))
+              expect_equal(nrow(o2),length(g1))
               o2 <- omega(g1,restricted=FALSE,B=10^6)
-              expect_equal(dim(o2),c(2^length(g1),length(g1)))
-              o2 <- omega(g1,restricted=FALSE,B=3)
-              expect_equal(dim(o2),c(4,length(g1)))
+              expect_equal(dim(o2),c(length(g1),2^length(g1)))
+              o2 <- omega(g1,restricted=FALSE,B=B)
+              expect_equal(dim(o2),c(length(g1),B+1))
           })
 
 
@@ -32,8 +59,8 @@ g2 <- sample(c(1,-1),n2,rep=T)
 test_that("Omega two stages restricted",
           {
               o3 <- omega(g1,g2,B = 10^6)
-              expect_equal(sum(g1>0) + sum(g2>0),unique(rowSums(o3 >0)))
-              expect_equal(dim(o3),c(choose(n1,sum(g1>0))*choose(n2,sum(g2>0)),length(g2) + length(g1)))
+              expect_equal(sum(g1>0) + sum(g2>0),unique(colSums(o3 >0)))
+              expect_equal(dim(o3),c(length(g2) + length(g1),choose(n1,sum(g1>0))*choose(n2,sum(g2>0))))
           })
 ## test conddist:
 test_that("Conditional permutation distribution",

@@ -9,9 +9,9 @@
 ##' @author Florian Klinglmueller
 ##'
 ##' @export
-normal_CER <- function(x1,g1,n,alpha=0.025,sigma=1){
+normal_CER <- function(x1,g1,n,alpha=0.025,sigma=1,one_sample=F){
     n1 <- length(x1)
-    z  <- zstat(x1,g1,sigma)
+    z  <- zstat(x1,g1,sigma,one_sample=one_sample)
     pnorm((qnorm(alpha,lower=F)-sqrt(n1/n)*z)/sqrt(1-n1/n),lower=F)
 }
 
@@ -102,7 +102,7 @@ z_test <- function(x1,x2,g1,g2,sigma=1,x3=NULL,g3=NULL){
 permutation_CER <- function(x1,g1,x2,stat=sumdiff,
                             B = 1000,alpha=.025,
                             g2=rep(c(-1,1),each=length(x2)/2),one_sample=FALSE,
-                            restricted=FALSE,...){
+                            restricted=TRUE,...){
   n1 <- length(g1)
   n <- length(c(x1,x2))
   n2 <- n-n1
@@ -119,7 +119,7 @@ permutation_CER <- function(x1,g1,x2,stat=sumdiff,
   dist <- perm_dist(x1,x2,g1,g2,stat,B,restricted=restricted,...)
   cdist <- cond_dist(x1,x2,g1,g2,stat,B,restricted=restricted,...)
   talpha <- quantile(dist,1-alpha)
-  cer1 <- mean(cdist>=talpha)
+  cer1 <- mean(cdist>talpha)
   ##    pvals <- unlist(lapply(cdist,function(x) sum(dist>=x)/B))
   ##    cer2 <- sum(pvals<=alpha)/B
   c(cer1)
