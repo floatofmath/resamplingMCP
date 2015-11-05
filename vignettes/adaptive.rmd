@@ -1,0 +1,92 @@
+```{r simple example}
+x1 <- rnorm(12)/sqrt(2)
+x2 <- rnorm(12)/sqrt(2)
+g1 <- rep(0:1,each=6)
+g2 <- rep(0:1,each=6)
+x1 <- x1+g1
+tstat(x1,g1)
+
+z_test(x1,NULL,g1,NULL)
+t_test(x1,NULL,g1,NULL)
+
+o <- omega(g1,B=10)
+sumdiff(x1,o)
+meandiff(x1,o)
+zstat(c(x1,x2),c(g1,g2))
+tstat(c(x1,x2),c(g1,g2))
+tstat(c(x1,x2),c(g1,g2))
+
+
+normal_CER(x1,g1,length(x1)+length(x2))
+t_CER(x1,g1,length(x1)+length(x2),)
+boxplot(cbind(resamplingMCP:::perm_dist(x1,x2,g1,g2,meandiff,100),
+              resamplingMCP:::cond_dist(x1,x2,g1,g2,meandiff,100)))
+permutation_CER(x1,g1,x2,meandiff,B=10000)
+
+
+```
+
+```{r}
+library(resamplingMCP)
+library(parallel)
+MCMC = 1000
+B = 1000
+options(mc.cores=min(detectCores()-1,30))
+
+## Medium size trial
+n  <- 12
+n1 <- 6
+
+
+
+## Type 1 error of design where second stage is as preplanned
+## to run a 1 sample symulation, just
+T1_preplanned <- type1(rcauchy,n=n,n1=n1,B=B,MCMC=MCMC,stat=meandiff)
+colMeans(T1_preplanned)
+
+# colMeans(T1_preplanned)
+# ## Type 1 error of normal distribution CER
+# T1_normal <- type1_normal_preplanned(n,n1,MCMC)
+# colMeans(T1_normal)
+
+
+## Type 1 error of design where second stage is as preplanned
+# to run a 1 sample symulation, just
+T1_preplanned <- type1_preplanned(n,n1,B,MCMC,one_sample=TRUE)
+colMeans(T1_preplanned)
+# preplanned influenced     normal 
+# 0.00000000 0.00000000 0.02479908 
+
+
+## Type 1 error of normal distribution CER
+T1_normal <- type1_normal_preplanned(n,n1,MCMC,one_sample=TRUE)
+colMeans(T1_normal)
+# preplanned influenced 
+# 0.02669741 0.02669741 
+
+## Type 1 error of design where second stage is as preplanned, heteroscedastic errors
+
+T1_preplanned_hetero <- type1_preplanned_hetero(n,n1,B,MCMC,one_sample=TRUE)
+colMeans(T1_preplanned_hetero)
+# preplanned influenced     normal 
+# 0.0317010  0.0313780  0.3103739 
+
+
+## Type 1 error of normal distribution CER, heteroscedastic errors
+MCMC = 5000
+B = 5000
+T1_normal_hetero <- type1_normal_preplanned_hetero(n,n1,MCMC,B,one_sample=TRUE)
+colMeans(T1_normal_hetero) 
+# preplanned influenced 
+# 0.2367942  0.2367942 
+
+T1_tstat_hetero <- type1_tstat_hetero(n,n1,MCMC,one_sample=FALSE)
+colMeans(T1_tstat_hetero)
+
+# preplanned influenced 
+# 0.2367942  0.2367942 
+
+
+
+
+```

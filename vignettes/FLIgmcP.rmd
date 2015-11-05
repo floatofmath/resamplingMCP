@@ -1,0 +1,94 @@
+# Permutation of adjusted p-values
+
+A major problem applying graph based procedures based on permutation
+tests is that for larger numbers of hypotheses (>20) computation
+becomes infeasible due to the exponential growth of the number of
+intersection hypotheses that have to be tested. Computational
+shortcuts for general weighting strategies defined by graphs are not
+available and likely do not exist, even, for very simple classes of
+graphical weighting procedures. The simple graphical approach that is
+based on weighted Bonferroni tests does not exploit the correlation or
+any other association between test statistics and therefore suffers
+from conservativeness. 
+
+In this paper we suggest an alternative approach that permits to use a
+graphical weighting procedure in combination with a multivariate
+permutation test procedure. This is achieved by using the adjusted
+p-values from a graph based multiple testing procedure as the test
+statistics in a step-down min-P type test. In this way we can exploit
+potential postive associations between test statistics while keeping
+the computational burden low. The adjusted p-values are computed based
+on the Bonferroni based graphical approach and are therefore computed
+in linear time.
+
+In a first step we have to show that this controls the FWER.
+
+Then we need to show that this procedure improves on the Bonferroni
+based procedure.
+
+We need to show that the relative importances - implied by the graph -
+are adhered to by this procedure.
+
+Finally compare it to a full closed test procedures based on
+multivariate permutation.
+
+This article is accompanied by the r-package resamplingMCP.
+
+```{r libraries}
+library(flip)
+library(gMCP)
+library(resamplingMCP)
+library(mvtnorm)
+```
+
+```{r}
+help(package='gMCP')
+
+G <- fixedSequence(5)
+
+R <- diag(1,5)
+R[cbind(1:4,2:5)] <- 1/2
+R[cbind(2:5,1:4)] <- 1/2
+
+p <- pnorm(z,lower=F)
+
+out <- flip(z[,,1])
+flite <- function(Y){
+    pp <- flip(Y,tail=1,perms=100)@res$`p-value`
+    -log10(gMCP::gMCP(G,pp)@adjPValues)
+}
+
+rescale <- function(out){
+    if(class(out[[1]])=='flip.object'){
+        sapply(out,function(p) p@res$`p-value`)
+    } else {
+        sapply(out,function(p) 10^(-p))
+    }
+}
+
+library(parallel)
+options(mc.cores=3)
+MCMC = 100
+z <- replicate(MCMC,rmvnorm(30,sigma=R))
+z1 <- replicate(MCMC,rmvnorm(30,mean=c(1/2,1/2,0,0,0),sigma=R))
+z2 <- replicate(MCMC,rmvnorm(30,mean=c(1/2,0,0,0,0),sigma=R))
+
+perm2 <- flip(z2[,,1],statTest=flite,tail=+1)
+plot(perm2)
+flip(z2[,,1],statTest=flite,tail=-1)
+flip(z2[,,1],statTest=flite,tail=0)
+
+
+
+## global Null
+pout <- mclapply(1:MCMC,function(i) flite(z[,,i]))
+out <- mclapply(1:MCMC,function(i) flip(z[,,i],statTest=flite,tail=1,perms=100))
+
+## first false
+pout2 <- mclapply(1:MCMC,function(i) flite(z1[,,i]))
+out1 <- mclapply(1:MCMC,function(i) flip(z1[,,i],statTest=flite,tail=1,perms=100))
+## first two false
+pout2 <- mclapply(1:MCMC,function(i) flite(z2[,,i]))
+out2 <- mclapply(1:MCMC,function(i) flip(z2[,,i],statTest=flite,tail=1,perms=100))
+
+```

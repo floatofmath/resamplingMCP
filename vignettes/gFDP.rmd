@@ -1,0 +1,60 @@
+# Controlling the false discovery proportion for graphically weighted multiple testing procedures
+
+Hemerik et al. (2016) show that the famous SAM procedure controls the
+FDP using a multivariate permutation approach. Their method is however
+not limited to rejection regions as defined by SAM. In this paper we
+provide an extension of the graph based multiple testing procedures
+proposed by Bretz et al. (2009) to a weighted SAM type procedure that
+controls the FDP.
+
+To this end we define the rejection region using the adjusted p-values
+from a Bonferroni based graphical procedure. The permuatiton
+distribution of the number of false discoveries is computed for a
+number of p-value cutoffs.
+
+
+```{r}
+help(package='gMCP')
+
+G <- fixedSequence(5)
+
+R <- diag(1,5)
+R[cbind(1:4,2:5)] <- 1/2
+R[cbind(2:5,1:4)] <- 1/2
+
+p <- pnorm(z,lower=F)
+
+out <- flip(z[,,1])
+rejections <- function(Y,alpha){
+    pp <- flip(Y,tail=1,perms=100)@res$`p-value`
+    sum(gMCP::gMCP(G,pp)@adjPValues < alpha)
+}
+
+
+library(parallel)
+options(mc.cores=3)
+MCMC = 100
+z <- replicate(MCMC,rmvnorm(30,sigma=R))
+z1 <- replicate(MCMC,rmvnorm(30,mean=c(1/2,1/2,0,0,0),sigma=R))
+z2 <- replicate(MCMC,rmvnorm(30,mean=c(1/2,0,0,0,0),sigma=R))
+
+perm2 <- sam(z2[,,1],rejections)
+plot(perm2)
+flip(z2[,,1],statTest=flite,tail=-1)
+flip(z2[,,1],statTest=flite,tail=0)
+
+
+
+## global Null
+pout <- mclapply(1:MCMC,function(i) flite(z[,,i]))
+out <- mclapply(1:MCMC,function(i) flip(z[,,i],statTest=flite,tail=1,perms=100))
+
+## first false
+pout2 <- mclapply(1:MCMC,function(i) flite(z1[,,i]))
+out1 <- mclapply(1:MCMC,function(i) flip(z1[,,i],statTest=flite,tail=1,perms=100))
+## first two false
+pout2 <- mclapply(1:MCMC,function(i) flite(z2[,,i]))
+out2 <- mclapply(1:MCMC,function(i) flip(z2[,,i],statTest=flite,tail=1,perms=100))
+
+
+```
