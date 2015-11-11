@@ -108,9 +108,8 @@ strat_reassignments <- function(ns,ks,restricted=TRUE,B=NULL){
         } else {
             function(n,k) random_assignments(n,B)
         }
-        cs <- lapply(which(ns>0),function(i) as.data.frame(combinations(ns[i],ks[i])))
-        out <- bind_rows(cs)
-        dimnames(out) <- list(1:nrow(out),1:ncol(out))
+        cs <- lapply(which(ns>0),function(i) combinations(ns[i],ks[i]))
+        out <- do.call('rbind',cs)
         out
     } else {
         combinations <- if(restricted) {

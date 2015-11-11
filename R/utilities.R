@@ -78,10 +78,9 @@ compare_power <- function(X=rnorm,X2=NULL,ncp,n,n1,stat=meandiff,B,MCMC,one_samp
     pm
 }
 
-##' .. content for \description{} (no empty lines) ..
+##' Simulate trial data
 ##'
-##' .. content for \details{} ..
-##' @title 
+##' @title Simulate trials
 ##' @param MCMC Number of trials to simulate
 ##' @param n1 First stage sample size
 ##' @param n Total preplanned sample size
@@ -90,61 +89,68 @@ compare_power <- function(X=rnorm,X2=NULL,ncp,n,n1,stat=meandiff,B,MCMC,one_samp
 ##' @param ncp Non-centrality parameter
 ##' @param n3 Third stage sample size (maybe a function of \code{x},\code{g2})
 ##' @param cond Condition on first and second stage observations ("both"), only on first stage observations ("first"), or unconditional of observations
-##' @return 
+##' @return list object with simulated data
+##' @export
 ##' @author Florian Klinglmueller
-simulate_trials <- function(MCMC,n1,n,n3=0,r=1/2,rfs=rnorm,rss=rnorm,ncp=0,cond=c("both","first","none")){
+simulate_trials <- function(MCMC,n1,n,n3=0,r=1/2,rfs=rnorm,rss=rnorm,ncp=0,cond=c("both","first","none"),restricted=TRUE){
     cond <- match.arg(cond)[1]
-    restricted = TRUE
     n2 <- n-n1
     ns <- c(n1,n2)
-    if(!isTRUE(all.equal(ns,as.integer(ns),check.attributes=FALSE))) { warning(cat("Relative group size",r,"do not permit whole numbered group sizes:",n*r," will be rounded!")) }
+    if(!isTRUE(all.equal(ns*r,as.integer(ns*r),check.attributes=FALSE))) { warning(paste("Relative group size",r,"do not permit whole numbered group sizes:",paste(ns*r,collapse=' ')," will be rounded!")) }
     ks <- floor(ns*r)
     if(ncp != 0 && cond != "none") { stop("Can not condition on observations under the alternative") }
     if(cond == "both"){
         x1 <- rfs(n1)
         x2 <- rss(n2)
-        ans <- list(x1=x1,x2=x2,x3=numeric(0),g=strat_reassignments(ns,ks,restricted=restricted,B=MCMC))
-        if(is.function(n3)){
-            n3 <- n3(x1,ans$g[,1:n1])
-            ans  <- within(ans,
-                           {
-                               x3 <- lapply(n3,rss)
-                               if(restricted){
-                                   g <- lapply(1:MCMC,function(i) c(g[,i],sample(c(rep(0L,n3[i]-ceiling((1-r)*n3[i])),rep(1L,n3[i]-floor(n3[i]*r))))))
-                               } else {
-                                   g <- lapply(1:MCMC,function(i) c(g[,i],sample(0L:1L,n3[i],replace=TRUE,prob=c(1-r,r))))
-                               }
-                           })
-        } else if(n3>0) {
-            ans <- within(ans,
-                          {
-                              x3 <- rss(n3)
-                              g = rbind(g,strat_reassignments(n3,floor(n3*r),B=MCMC))
-                          })
-        }
+        ans <- list(x=c(x1,x2),g=strat_reassignments(ns,ks,restricted=restricted,B=MCMC))
     } else if(cond == "first") {
+        g1 <- strat_reassignments(ns[1],ks[1],restricted=restricted,B=MCMC)
+        g2 <- if(restricted) matrix(c(rep(0L,ns[2]-ks[2]),rep(1L,ks[2])),ncol=ncol(g1),nrow=ns[2]) else matrix(sample(0L:1L,ns[2]*ncol(g1),replace=TRUE,prob=c(1-r,r)),nrow=ns[2])
         x1 <- rfs(n1)
-        x2 <- matrix(rss(n2*MCMC),ncol=MCMC,nrow=n2)
-        ans <- list(x1=x1,x2=x2,x3=numeric(0),g=rbind(strat_reassignments(ns[1],ks[1],restricted=restricted,B=MCMC),matrix(rep(0L,ns[2]-ks[2]),rep(1L,ks[2]),nrow=MCMC,ncol=n2,byrow=T)))
-        if(is.function(n3)){
-            n3 <- n3(x1,ans$g[,1:n1])
-            ans  <- within(ans,
-                           {
-                               x3 <- lapply(n3,rss)
-                               if(restricted){
-                                   g <- lapply(1:MCMC,function(i) c(g[i,],sample(c(rep(0L,n3[i]-ceiling((1-r)*n3[i])),rep(1L,n3[i]-floor(n3[i]*r))))))
-                               } else {
-                                   g <- lapply(1:MCMC,function(i) c(g[i,],sample(0L:1L,n3[i],replace=TRUE,prob=c(1-r,r))))
-                               }
-                           })
-        } else if(n3>0) {
-            ans <- within(ans,
-                          {
-                              x3 <- rss(n3)
-                              g = cbind(g,strat_reassignments(n3,floor(n3*r),B=MCMC))
-                          })
-        }
-
+        x2 <- matrix(rss(n2*ncol(g1)),nrow=n2)
+        ans <- list(x=rbind(x1,x2),
+                    g=rbind(g1,g2))
+    } else if(cond == "none") {
+        g1 <- if(restricted) matrix(c(rep(0L,ns[1]-ks[1]),rep(1L,ks[2])),nrow=ns[1],ncol=MCMC) else matrix(sample(0L:1L,ns[1]*MCMC,replace=TRUE,prob=c(1-r,r)),nrow=ns[1])
+        g2 <- if(restricted) matrix(c(rep(0L,ns[2]-ks[2]),rep(1L,ks[2])),nrow=ns[2],ncol=MCMC) else matrix(sample(0L:1L,ns[2]*MCMC,replace=TRUE,prob=c(1-r,r)),nrow=ns[2])
+        x1 <- matrix(rfs(n1*MCMC),nrow=n1)
+        x2 <- matrix(rss(n2*MCMC),nrow=n2)
+        x1 <- x1 + ncp*g1
+        x2 <- x2 + ncp*g2
+        ans <- list(x=rbind(x1,x2),
+                    g=rbind(g1,g2))
+        
+    }
+    if(is.function(n3)){
+        n3 <- n3(x1,ans$g[,1:n1])
+        k3 <- floor(n3*r)
+        ans  <- within(ans,
+                       {
+                           if(restricted){
+                               g3 <- lapply(1:ncol(g),function(i) c(rep(0L,n3[i]-k3[i])),rep(1L,k3))
+                           } else {
+                               g3 <- lapply(1:ncol(g),function(i) sample(0L:1L,n3[i],replace=TRUE,prob=c(1-r,r)))
+                           }
+                           x3 <- lapply(1:ncol(g),rss(n3[i])+ncp*g[i])
+                       })
+    } else if(n3>0) {
+        k3 <- floor(n3*r)
+        ans <- within(ans,
+                      {
+                          x3 <- matrix(rss(n3*ncol(g)),nrow=n3)+ncp*g3
+                          g3 <- if(restricted) matrix(c(rep(0L,n3-k3),rep(1L,k3)),nrow=n3,ncol=ncol(ans$g)) else matrix(sample(0L:1L,n3*ncol(ans$g),replace=TRUE,prob=c(1-r,r)),nrow=n3)
+                      })
     }
     return(ans)
 }
+
+## n1=3
+## n=5
+## B=10
+## expect_warning(s1 <- simulate_trials(B,n1,n))
+## expect_equal(length(s1$x),n)
+## expect_equal(nrow(s1$g),n)
+## expect_equal(ncol(s1$g),pmin(prod(choose(c(n1,n-n1),floor(1/2*c(n1,n-n1)))),B))
+## expect_equal(unique(colSums(s1$g)),sum(floor(1/2*c(n1,n-n1))))
+## expect_equal(unique(colSums(s1$g[1:n1,])),floor(1/2*n1))
+## expect_equal(unique(colSums(s1$g[(n1+1):n,])),floor(1/2*(n-n1)))
