@@ -1,3 +1,132 @@
+```{r libraries}
+library(flip)
+library(resamplingMCP)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(magrittr)
+```
+
+```{r t vs permutatio test}
+
+adaptive_ttest <- function(x){
+    n <- length(x)
+    n1 <- floor(n/2)
+    p1 <- t.test(x[1:n1],alternative='greater')$p.value
+    p2 <- t.test(x[(n1+1):n],alternative='greater')$p.value
+    {sqrt(c(n1,n-n1)/n) * qnorm(c(p1,p2),lower=F)} %>% sum() %>% pnorm(lower=FALSE)
+}
+
+hetero_ttest <- function(x,s=2){
+    n <- length(x)
+    if(n %% s != 0) stop('Sample size has to be even')
+    n1 <- floor(n/s)
+    xs <- split(x,rep(1:s,each=n1))
+    ps <- sapply(lapply(xs,t.test,alternative='greater'),`[[`,'p.value')
+    {sqrt(n1/n) * qnorm(ps,lower=F)} %>% sum() %>% pnorm(lower=FALSE)
+}
+
+compare_tvsp <- function(n,B,alpha=.05,rdist=rnorm_hetero,...) {
+    out <- sapply(1:B,function(i,n=n,...) {
+        x <- rdist(n,...)
+        c(power_ttest = t.test(x,alternative='greater')$p.value,
+          power_ptest = flip(x,tail=1)@res$`p-value`,
+          power_atest = hetero_ttest(x,s=10))
+    },n=n,...)
+    rowMeans(out<=alpha)
+}
+
+plist <- lapply(seq(0,5,.25),function(ncp) c(ncp=ncp,compare_tvsp(20,5000,ncp=ncp,df=1)))
+
+power_comparison <- plist %>%
+    do.call(what='rbind') %>%
+        as.data.frame %>%
+            melt(id.vars="ncp",variable.name='test',value.name='power')
+
+pdf("/tmp/permutation_vs_ttest_hetero.pdf",width=7,height=4)
+qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
+dev.off()
+
+plist2 <- lapply(seq(0,5,.25),function(ncp) c(ncp=ncp,compare_tvsp(20,5000,rdist=rt,ncp=ncp,df=1)))
+
+power_comparison <- plist2 %>%
+    do.call(what='rbind') %>%
+        as.data.frame %>%
+            melt(id.vars="ncp",variable.name='test',value.name='power')
+
+pdf("/tmp/permutation_vs_ttest_tdist.pdf",width=7,height=4)
+qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
+dev.off()
+
+power_diff <- mutate(dcast(power_comparison,ncp~test),power_diff=power_ptest - power_ttest,power_rel=power_ptest/power_ttest-1)
+qplot(ncp,power_diff,data=power_diff,geom='line')
+
+out <- replicate(10000,adaptive_ttest(rt(10,df=1,ncp=1)))
+out2 <- replicate(10000,flip(rt(10,df=1,ncp=1),alternative=1)@res$`p-value`)
+out3 <- replicate(10000,hetero_ttest(rt(10,df=1,ncp=1),s=2))
+out4 <- replicate(10000,hetero_ttest(rt(10,df=1,ncp=1),s=5))
+mean(out < .05)
+mean(out2 < .05)
+mean(out3 < .05)
+mean(out4 < .05)
+
+
+```
+
+
+## Simulations under the null
+
+### Conditional both
+
+```{r adaptive null}
+## Small sample
+simulate_trials(1,4,8)
+simulate_trials(1,6,12)
+
+## Medium sample
+simulate_trials(1,20,40)
+simulate_trials(1,50,100)
+
+## Large sample
+simulate_trials(1,100,200)
+simulate_trials(1,200,400)
+
+```
+### Conditional first
+
+```{r adaptive null}
+## Small sample
+simulate_trials(1,4,8)
+simulate_trials(1,6,12)
+
+## Medium sample
+simulate_trials(1,20,40)
+simulate_trials(1,50,100)
+
+## Large sample
+simulate_trials(1,100,200)
+simulate_trials(1,200,400)
+
+```
+
+## Conditional none
+
+```{r adaptive null}
+## Small sample
+simulate_trials(1,4,8)
+simulate_trials(1,6,12)
+
+## Medium sample
+simulate_trials(1,20,40)
+simulate_trials(1,50,100)
+
+## Large sample
+simulate_trials(1,100,200)
+simulate_trials(1,200,400)
+
+```
+
+
 ```{r simple example}
 x1 <- rnorm(12)/sqrt(2)
 x2 <- rnorm(12)/sqrt(2)

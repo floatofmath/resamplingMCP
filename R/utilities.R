@@ -15,6 +15,7 @@ make_pw_contrasts <- function(g,control=0){
 ##' @param n  number of observations 
 ##' @param df degrees of freedom for the variance distribution
 ##' @param delta non-centrality parameter
+##' @export
 rnorm_hetero <- function(n,df=1,ncp=0){
   rnorm(n)/sqrt(rchisq(n,df)/df) + ncp
 }

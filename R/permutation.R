@@ -206,3 +206,28 @@ perm_test <- function(x1,x2,g1,g2,stat,B,x3=NULL,g3=NULL){
     cdist <- perm_dist(x1,x2,g1,g2,stat,B,x3,g3)
     mean(cdist>=stat(c(x1,x2,x3),c(g1,g2,g3)))
 }
+
+##' Perform an adaptive permutation test
+##'
+##' Note that we currently assume that the group sizes of the second
+##' stage in the adapted trial are equal to those of the preplanned
+##' test.
+##' 
+##' @title Adaptive permutation test
+##' @param x1 First stage observations
+##' @param x2 Second stage observations
+##' @param g1 First stage treatment assignments 
+##' @param g2 Second stage treatment assignments (see Details)
+##' @param stat Function that computes the test statistic
+##' @param B Number of draws from the permutation distribution to use
+##' @param alpha Significance level of the test
+##' @param x3 Third stage observations (e.g. sample size increase)
+##' @param g3 Third stage treatment allocations (e.g. sample size increase)
+##' @return logical indicating wether the test rejects
+##'
+##' @author Florian Klinglmueller
+##' @export
+adaptive_perm_test <- function(x1,x2,g1,g2,stat,B,alpha=.025,x3=NULL,g3=NULL){
+    cer <- permutation_CER(x1,g1,x2,stat,B,alpha,g2)
+    perm_test(x2,x3,g2,g3,stat,B)<=alpha
+}
