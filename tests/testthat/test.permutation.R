@@ -34,9 +34,9 @@ test_that("Stratified (re)assignment",
 test_that("Omega one stage, restricted",
           {
               o1 <- omega(g1)
-              expect_equal(sum(g1>0),unique(rowSums(o1 > 0)))
-              expect_equal(nrow(o1),choose(n1,sum(g1>0)))
-              expect_equal(ncol(o1),length(g1))
+              expect_equal(sum(g1>0),unique(colSums(o1 > 0)))
+              expect_equal(ncol(o1),choose(n1,sum(g1>0)))
+              expect_equal(nrow(o1),length(g1))
           })
 
 
@@ -63,14 +63,17 @@ test_that("Omega two stages restricted",
               expect_equal(dim(o3),c(length(g2) + length(g1),choose(n1,sum(g1>0))*choose(n2,sum(g2>0))))
           })
 ## test conddist:
+pasta  <- function(y,xs) apply(xs,2,function(x) paste(which(x>0),collapse=''))
 test_that("Conditional permutation distribution",
           {
-              expect_true(all(cond_dist(rnorm(4),rnorm(4),rep(c(-1,1),each=2),rep(c(-1,1),each=2),function(y,x) paste(which(x>0),collapse=''),100000) %in% apply(expand.grid('34',apply(4+gtools::combinations(4,2),1,paste,collapse='')),1,paste,collapse='')))
+              x1 <- rnorm(4)
+              x2 <- rnorm(4)
+              expect_true(all(cond_dist(x1,x2,rep(c(-1,1),each=2),rep(c(-1,1),each=2),pasta,100000) %in% apply(expand.grid('34',apply(4+gtools::combinations(4,2),1,paste,collapse='')),1,paste,collapse='')))
           })
 
 test_that("Permutation distribution",
           {
-              expect_true(all(perm_dist(rnorm(4),rnorm(4),rep(c(-1,1),each=2),rep(c(-1,1),each=2),function(y,x) paste(which(x>0),collapse=''),100000) %in% apply(expand.grid(apply(gtools::combinations(4,2),1,paste,collapse=''),apply(4+gtools::combinations(4,2),1,paste,collapse='')),1,paste,collapse='')))
+              expect_true(all(perm_dist(rnorm(4),rnorm(4),rep(c(-1,1),each=2),rep(c(-1,1),each=2),pasta,100000) %in% apply(expand.grid(apply(gtools::combinations(4,2),1,paste,collapse=''),apply(4+gtools::combinations(4,2),1,paste,collapse='')),1,paste,collapse='')))
           }
           )
 

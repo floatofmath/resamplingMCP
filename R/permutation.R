@@ -43,7 +43,7 @@ random_assignments <- function(n,B){
 ##' @return integer matrix of size \code{n} x \code{B}
 ##' @author Florian Klinglmueller
 random_reassignments <- function(n,k,B){
-    replicate(B,sample(c(rep(0L,n-k),rep(1L,k))))
+    random_reassignments_cpp(c(rep(0L,n-k),rep(1L,k)),B)
 }
 ##library(microbenchmark)
 

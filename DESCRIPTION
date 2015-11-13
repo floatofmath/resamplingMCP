@@ -9,6 +9,7 @@ Depends:
     flip (>= 2.4.3),
     gMCP (>= 0.8-10),
     matrixStats
+LinkingTo: Rcpp
 License: MIT
 LazyData: true
 Suggests:

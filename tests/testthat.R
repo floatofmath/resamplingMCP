@@ -1,7 +1,7 @@
 library(testthat)
-library(codepackage)
+library(resamplingMCP)
 
-test_check("codepackage")
+test_check("resamplingMCP")
 
 expect_aboutequal <- function(object,expected,digits=4,...){
     ro <- round(object,digits)

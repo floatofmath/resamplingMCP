@@ -118,7 +118,8 @@ permutation_CER <- function(x1,g1,x2,stat=sumdiff,
   ## balanced second stage!!
   dist <- perm_dist(x1,x2,g1,g2,stat,B,restricted=restricted,...)
   cdist <- cond_dist(x1,x2,g1,g2,stat,B,restricted=restricted,...)
-  talpha <- quantile(dist,1-alpha)
+  m <- length(dist)
+  talpha <- sort(dist)[ceiling((1-alpha)*m)]
   cer1 <- mean(cdist>talpha)
   ##    pvals <- unlist(lapply(cdist,function(x) sum(dist>=x)/B))
   ##    cer2 <- sum(pvals<=alpha)/B

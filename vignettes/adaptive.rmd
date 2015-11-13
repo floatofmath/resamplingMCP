@@ -47,7 +47,7 @@ pdf("/tmp/permutation_vs_ttest_hetero.pdf",width=7,height=4)
 qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
 dev.off()
 
-plist2 <- lapply(seq(0,5,.25),function(ncp) c(ncp=ncp,compare_tvsp(20,5000,rdist=rt,ncp=ncp,df=1)))
+plist2 <- lapply(seq(0,2,.1),function(ncp) c(ncp=ncp,compare_tvsp(20,5000,rdist=rt,ncp=ncp,df=1)))
 
 power_comparison <- plist2 %>%
     do.call(what='rbind') %>%
@@ -58,13 +58,26 @@ pdf("/tmp/permutation_vs_ttest_tdist.pdf",width=7,height=4)
 qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
 dev.off()
 
+plist3 <- lapply(seq(0,1,.05),function(ncp) c(ncp=ncp,compare_tvsp(20,5000,rdist=rnorm,mean=ncp)))
+
+power_comparison <- plist3 %>%
+    do.call(what='rbind') %>%
+        as.data.frame %>%
+            melt(id.vars="ncp",variable.name='test',value.name='power')
+
+pdf("/tmp/permutation_vs_ttest_norm.pdf",width=7,height=4)
+qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
+dev.off()
+
 power_diff <- mutate(dcast(power_comparison,ncp~test),power_diff=power_ptest - power_ttest,power_rel=power_ptest/power_ttest-1)
 qplot(ncp,power_diff,data=power_diff,geom='line')
 
 out <- replicate(10000,adaptive_ttest(rt(10,df=1,ncp=1)))
 out2 <- replicate(10000,flip(rt(10,df=1,ncp=1),alternative=1)@res$`p-value`)
-out3 <- replicate(10000,hetero_ttest(rt(10,df=1,ncp=1),s=2))
+out3 <- replicate(10000,hetero_ttest(rt(10,df=1,ncp=1),s=5))
 out4 <- replicate(10000,hetero_ttest(rt(10,df=1,ncp=1),s=5))
+out4 <- replicate(10000,hetero_ttest(rnorm(10,mean=0),s=5))
+out4 <- replicate(10000,hetero_ttest(rnorm(10,df=1,ncp=0),s=5))
 mean(out < .05)
 mean(out2 < .05)
 mean(out3 < .05)
@@ -76,9 +89,44 @@ mean(out4 < .05)
 
 ## Simulations under the null
 
-### Conditional both
+### Randomization model
+
+We draw samples from a number of distributions, and compute the expected conditional error rate, taking the expectation over all possible first stage randomizations. We then compute the expceted expected conditional error rate and the maximum expected conditional error rate.
 
 ```{r adaptive null}
+
+rdist <- rnorm
+MCMC  <- 100
+
+type1_randomization <- function(rdist,n1,n,MCMC,B=1000){
+    lapply(1:MCMC,function(i){
+        x <- rdist(n)
+        g1 <- omega(rep(0:1,each=n1/2))
+        list(pCER = mean(apply(g1,2,function(g1) permutation_CER(x[1:n1],g1,x[(n1+1):n],B=B))),
+             normCER = mean(apply(g1,2,function(g1) normal_CER(x[1:n1],g1,n))),
+             tCER = mean(apply(g1,2,function(g1) t_CER(x[1:n1],g1,n))))}) %>%
+                 dplyr::bind_rows()
+}
+
+out1 <- type1_randomization(rnorm,4,8,100)
+out2 <- type1_randomization(rnorm,6,12,100)
+out3 <- type1_randomization(rnorm,8,16,100,B=5000)
+out <- type1_randomization(rnorm,,40,100)
+out <- type1_randomization(rnorm,100,200,100)
+
+
+
+
+n1 <- 20
+n <- 40
+x <- rnorm(n)
+g1 <- rep(0:1,each=n1/2)
+system.time(cond_dist(x[1:n1],x[(n1+1):n],g1,g1,meandiff,100000))
+system.time(sort(perm_dist(x[1:n1],x[(n1+1):n],g1,g1,meandiff,100000))[ceiling(.975*36)])
+
+
+choose(4,2)^2
+
 ## Small sample
 simulate_trials(1,4,8)
 simulate_trials(1,6,12)
