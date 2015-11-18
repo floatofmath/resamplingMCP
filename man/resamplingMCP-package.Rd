@@ -2,10 +2,14 @@
 \docType{package}
 \name{resamplingMCP-package}
 \alias{resamplingMCP-package}
-\title{Fixed sample and adaptive permutation tests for single and multiple hypotheses
+\title{resampling MCP
+
+Fixed sample and adaptive permutation tests for single and multiple hypotheses
 
 Provides functions to perform permutation tests.}
 \description{
+resampling MCP
+
 Fixed sample and adaptive permutation tests for single and multiple hypotheses
 
 Provides functions to perform permutation tests.

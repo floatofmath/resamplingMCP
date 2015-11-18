@@ -69,6 +69,17 @@ pdf("/tmp/permutation_vs_ttest_norm.pdf",width=7,height=4)
 qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
 dev.off()
 
+plist4 <- lapply(seq(0,1,.05),function(ncp) c(ncp=ncp,compare_tvsp(20,5000,ncp=ncp,df=4)))
+
+power_comparison <- plist4 %>%
+    do.call(what='rbind') %>%
+        as.data.frame %>%
+            melt(id.vars="ncp",variable.name='test',value.name='power')
+
+pdf("/tmp/permutation_vs_ttest_t4.pdf",width=7,height=4)
+qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
+dev.off()
+
 power_diff <- mutate(dcast(power_comparison,ncp~test),power_diff=power_ptest - power_ttest,power_rel=power_ptest/power_ttest-1)
 qplot(ncp,power_diff,data=power_diff,geom='line')
 
@@ -97,10 +108,12 @@ We draw samples from a number of distributions, and compute the expected conditi
 
 rdist <- rnorm
 MCMC  <- 100
+library(parallel)
+options(mc.cores=3)
 
-type1_randomization <- function(rdist,n1,n,MCMC,B=1000){
-    lapply(1:MCMC,function(i){
-        x <- rdist(n)
+type1_randomization <- function(rdist,n1,n,MCMC,B=1000,...){
+    mclapply(1:MCMC,function(i){
+        x <- rdist(n,...)
         g1 <- omega(rep(0:1,each=n1/2))
         list(pCER = mean(apply(g1,2,function(g1) permutation_CER(x[1:n1],g1,x[(n1+1):n],B=B))),
              normCER = mean(apply(g1,2,function(g1) normal_CER(x[1:n1],g1,n))),
@@ -108,11 +121,93 @@ type1_randomization <- function(rdist,n1,n,MCMC,B=1000){
                  dplyr::bind_rows()
 }
 
-out1 <- type1_randomization(rnorm,4,8,100)
-out2 <- type1_randomization(rnorm,6,12,100)
-out3 <- type1_randomization(rnorm,8,16,100,B=5000)
-out <- type1_randomization(rnorm,,40,100)
-out <- type1_randomization(rnorm,100,200,100)
+t1_norm_1 <- type1_randomization(rnorm,4,8,100)
+t1_rt1_1 <- type1_randomization(rt,4,8,100,df=1)
+t1_rt4_1 <- type1_randomization(rt,4,8,100,df=4)
+
+t1_norm_1$distribution  <- "Normal"
+t1_norm_1$sample_size  <- 8
+t1_rt1_1$distribution <- "Student-t, df=1"
+t1_rt1_1$sample_size <- 8
+t1_rt4_1$distribution <- "Student-t, df=4"
+t1_rt4_1$sample_size <- 8
+
+t1_norm_2 <- type1_randomization(rnorm,6,12,100)
+t1_rt1_2 <- type1_randomization(rt,6,12,100,df=1)
+t1_rt4_2 <- type1_randomization(rt,6,12,100,df=4)
+
+t1_norm_2$distribution  <- "Normal"
+t1_norm_2$sample_size  <- 12
+t1_rt1_2$distribution <- "Student-t, df=1"
+t1_rt1_2$sample_size <- 12
+t1_rt4_2$distribution <- "Student-t, df=4"
+t1_rt4_2$sample_size <- 12
+
+t1_norm_3 <- type1_randomization(rnorm,8,16,100,B=5000)
+t1_rt1_3 <- type1_randomization(rt,8,16,100,B=5000,df=1)
+t1_rt4_3 <- type1_randomization(rt,8,16,100,B=5000,df=4)
+
+t1_norm_3$distribution  <- "Normal"
+t1_norm_3$sample_size  <- 16
+t1_rt1_3$distribution <- "Student-t, df=1"
+t1_rt1_3$sample_size <- 16
+t1_rt4_3$distribution <- "Student-t, df=4"
+t1_rt4_3$sample_size <- 16
+
+t1_norm_4 <- type1_randomization(rnorm,50,100,100,B=5000)
+t1_rt1_4 <- type1_randomization(rt,50,100,100,B=5000,df=1)
+t1_rt4_4 <- type1_randomization(rt,50,100,100,B=5000,df=4)
+
+t1_norm_4$distribution  <- "Normal"
+t1_norm_4$sample_size  <- 100
+t1_rt1_4$distribution <- "Student-t, df=1"
+t1_rt1_4$sample_size <- 100
+t1_rt4_4$distribution <- "Student-t, df=4"
+t1_rt4_4$sample_size <- 100
+
+pdf('/tmp/box.pdf',width=8,height=5)
+par(mfrow=c(1,2))
+boxplot(t1_norm_2[,1:3])
+boxplot(t1_norm_3[,1:3])
+dev.off()
+
+t1_sims <- bind_rows(list(t1_norm_1,t1_norm_2,t1_norm_3,t1_norm_4,
+                          t1_rt1_1,t1_rt1_2,t1_rt1_3,t1_rt1_4,
+                          t1_rt4_1,t1_rt4_2,t1_rt4_3,t1_rt4_4))
+
+(t1_sims %>% melt(value.name="type_1",id.vars=c('distribution','sample_size'),variable.name="test") -> t1_sims_molten) %>% head
+
+levels(t1_sims_molten$test) <- c("Permutation","z-test","t-test")
+
+library(xtable)
+
+t1_sims_molten %>%
+    group_by(test,distribution,sample_size) %>%
+        summarise(mean=mean(type_1),sd=sd(type_1)) %>%
+            transmute(sample_size,type_1 = paste0("\"",round(mean,3)," (",round(sd,3),")\"")) %>%
+                dcast(distribution+sample_size~test) %>%
+                    xtable %>% print.xtable(include.rownames=FALSE)
+
+
+
+save(t1_sims,file="data/t1_sims_1711.rda")
+
+pdf('figures/t1_008.pdf')
+boxplot(t1_norm_1)
+dev.off()
+pdf('figures/t1_012.pdf')
+boxplot(t1_norm_2)
+dev.off()
+pdf('figures/t1_016.pdf')
+boxplot(t1_norm_3)
+dev.off()
+pdf('figures/t1_016.pdf')
+boxplot(t1_norm_4)
+dev.off()
+
+
+
+
 
 
 

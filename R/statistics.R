@@ -12,7 +12,7 @@ meandiff <- function(x,g){
         if(is.matrix(x)){
             stop("Only one of g or x may be passed as a matrix")
         }
-        as.numeric((x %*% {g>0})/colSums({g>0}) - ((x %*% {g<=0})/colSums({g<=0})))
+        as.numeric(meandiffC(x,g))#as.numeric((x %*% {g>0})/colSums({g>0}) - ((x %*% {g<=0})/colSums({g<=0})))
     } else if(is.matrix(x)){
         colMeans(x[g>0,]) - colMeans(x[g<=0,])
     } else {
@@ -35,7 +35,7 @@ sumdiff <- function(x,g,...){
         }
         colSums(x[g>0,])- colSums(x[g<=0,])
     } else if(length(dim(g))>1){
-        colSums(x * {g>0}) - colSums(x * {g<=0})
+        as.numeric(sumdiffC(x,g))#colSums(x * {g>0}) - colSums(x * {g<=0})
     } else {
         sum(x*(g>0)) - sum(x*(g<=0))
     }
