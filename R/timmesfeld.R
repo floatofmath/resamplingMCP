@@ -1,3 +1,8 @@
+compute_fraction <- function(x,p,y,q){
+    ifelse(q>p,(x/y)^p /y^(q-p),(x/y)^q *x^(p-q))
+}
+        
+
 v <- function(x,g=rep.int(1,length(x))){
     sum(x[g>0])
 }
@@ -53,14 +58,18 @@ ccer_twosample <- function(uu2_1,uu2_2,uu1_1,uu1_2,v1,m,n,m1,n1,alpha){
 }
 
 dutu <- function(u,tu,n,tn){
-    gamma(tn/2)/(gamma(n/2)*gamma((tn-n)/2)) * (u^(n/2-1)*(tu-u)^((tn-n)/2-1))/tu^(tn/2-1)
+    gamma(tn/2)/(gamma(n/2)*gamma((tn-n)/2)) * compute_fraction(u,n/2-1,tu,tn/2-1)*(tu-u)^((tn-n)/2-1)
+                                        #(u^(n/2-1)*(tu-u)^((tn-n)/2-1))/tu^(tn/2-1)
 }
 
 duutuu <- function(uu_1,uu_2,tuu_1,tuu_2,m,n,tm,tn){
     g <- m+n
     tg <- tm+tn
-    (sqrt(tg)*gamma((tg-1)/2)*(uu_2-uu_1^2/g)^((g-3)/2)*(tuu_2-uu_2-(tuu_1-tuu_1)^2/(tg-g))^((tg-g-3)/2))/
-        (sqrt(pi)*sqrt(g)*gamma((tg-1)/2)*sqrt(tg-g)*gamma((tg-g-1)/2)*(tuu_2-tuu_1^2/tg)^((tg-3)/2))
+    ## (sqrt(tg)*gamma((tg-1)/2)*(uu_2-uu_1^2/g)^((g-3)/2)*(tuu_2-uu_2-(tuu_1-tuu_1)^2/(tg-g))^((tg-g-3)/2))/
+    ##     (sqrt(pi)*sqrt(g)*gamma((tg-1)/2)*sqrt(tg-g)*gamma((tg-g-1)/2)*(tuu_2-tuu_1^2/tg)^((tg-3)/2))
+    sqrt(tg)*gamma((tg-1)/2)*(tuu_2-uu_2-(tuu_1-tuu_1)^2/(tg-g))^((tg-g-3)/2)*
+        compute_fraction(uu_2-uu_1^2/g,(g-3)/2,tuu_2-tuu_1^2/tg,(tg-3)/2)/
+            (sqrt(pi)*sqrt(g)*gamma((tg-1)/2)*sqrt(tg-g)*gamma((tg-g-1)/2))
 }
 
 ##' .. content for \description{} (no empty lines) ..
@@ -87,12 +96,15 @@ clev_twosample <- function(tuu2,uu1,v1,tm2,tn2,m,n,m1,n1,alpha=0.025){
     m2 <- m-m1
     n2 <- n-n1
     f <- function(x,y) {
-        ccer_twosample(y,x,uu1[1],uu1[2],v1,m,n,m1,n1,alpha)* duutuu(y,x,tuu2[1],tuu2[2],m2,n2,tm2,tn2)
+        ccer_twosample(y,x,uu1[1],uu1[2],v1,m,n,m1,n1,alpha) *  duutuu(y,x,tuu2[1],tuu2[2],m2,n2,tm2,tn2)
     }
     integral2(f,xmin=0,xmax=tuu2[2],
               ymin=function(x) -sqrt((m2+n2)*x),
-              ymax = function(x) sqrt((m2+n2)*x),vectorized=F)
+              ymax = function(x) sqrt((m2+n2)*x))
 }
+
+
+
 
 m <- n <- 75
 m1 <- n1 <- 20
