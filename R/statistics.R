@@ -1,3 +1,45 @@
+##' Mean of positive entries
+##' 
+##' @title Positive sum
+##' @template matrix_stats_details
+##' @author Florian Klinglmueller
+##' @export
+possum <- function(x,g){
+    if(is.matrix(g)){
+        if(is.matrix(x)){
+            stop("Only one of g or x may be passed as a matrix")
+        }
+        colSums(abs(x) * (g>0))
+    } else if(is.matrix(x)){
+        colSums(abs(x)[g>0,])
+    } else {
+        sum(abs(x)[g>0])
+    }
+}
+    
+
+##' Mean of paired differences. Usefull in one-sample tests. 
+##'
+##' @template matrix_stats_details
+##' @title Mean of paired differences
+##' @author Florian Klinglmueller
+##' @export
+diffmean <- function(x,g){
+    if(is.matrix(g)){
+        if(is.matrix(x)){
+            stop("Only one of g or x may be passed as a matrix")
+        }
+        colMeans(abs(x) * (((g>0)*2)-1))
+    } else if(is.matrix(x)){
+        colMeans(abs(x) * (((g>0)*2)-1))
+    } else {
+        mean(abs(x) * (((g>0)*2)-1))
+    }
+}
+
+
+
+
 ##' Matrix computation of difference of means between two groups
 ##'
 ##' @template matrix_stats_details
@@ -12,7 +54,7 @@ meandiff <- function(x,g){
         if(is.matrix(x)){
             stop("Only one of g or x may be passed as a matrix")
         }
-        as.numeric(meandiffC(x,g))#as.numeric((x %*% {g>0})/colSums({g>0}) - ((x %*% {g<=0})/colSums({g<=0})))
+        as.numeric(meandiffC(x,g>0))#as.numeric((x %*% {g>0})/colSums({g>0}) - ((x %*% {g<=0})/colSums({g<=0})))
     } else if(is.matrix(x)){
         colMeans(x[g>0,]) - colMeans(x[g<=0,])
     } else {
@@ -35,7 +77,7 @@ sumdiff <- function(x,g,...){
         }
         colSums(x[g>0,])- colSums(x[g<=0,])
     } else if(length(dim(g))>1){
-        as.numeric(sumdiffC(x,g))#colSums(x * {g>0}) - colSums(x * {g<=0})
+        as.numeric(sumdiffC(x,g>0))#colSums(x * {g>0}) - colSums(x * {g<=0})
     } else {
         sum(x*(g>0)) - sum(x*(g<=0))
     }

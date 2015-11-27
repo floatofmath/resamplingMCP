@@ -20,6 +20,46 @@ rnorm_hetero <- function(n,df=1,ncp=0){
   rnorm(n)/sqrt(rchisq(n,df)/df) + ncp
 }
 
+
+##' Simulate from a tail contaminated normal distribution
+##'
+##' @title Generate contaminated normally distributed data
+##' @param n number of observations
+##' @param mean mean value
+##' @param sd standard deviation 
+##' @param cprop proportion of contaminated samples
+##' @param csd standard deviation of contaminated samples
+##' @return vector with \code{n} pseudo random numbers
+##' @author Florian Klinglmueller
+##' @export
+rnorm_tcont <- function(n,mean=0,sd=1,cprop=.1,csd=3){
+    if(n == 1)
+        return(rnorm(1,mean=mean,sd=sample(c(sd,csd),1)))
+    out <- sample(c(rnorm(ceiling(n*(1-cprop)),mean=mean,sd=sd),rnorm(floor(n*cprop),mean=mean,sd=csd)))
+    out
+}
+
+##' Simulate from a location shift contaminated normal distribution
+##'
+##' @title Generate contaminated normally distributed data
+##' @param n number of observations
+##' @param mean mean value
+##' @param sd standard deviation 
+##' @param cprop proportion of contaminated samples
+##' @param cmean standard deviation of contaminated samples
+##' @return vector with \code{n} pseudo random numbers
+##' @author Florian Klinglmueller
+##' @export
+rnorm_scont <- function(n,mean=0,sd=1,cprop=.1,cmean=3,csd=sd){
+    if(n == 1)
+        return(rnorm(1,mean=mean,sd=sample(c(sd,csd),1)))
+    m <- ceiling(n*(1-cprop))
+    k <- n-m
+    out <- sample(c(rnorm(m,mean=mean,sd=sd),
+                    sample(c(-1,1),k,replace=TRUE)*rnorm(k,mean=mean+cmean,sd=csd)))
+    out
+}
+
 ##' Template function to compute the Type 1 error of a trial design
 ##'
 ##' @title Type 1 error 

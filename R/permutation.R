@@ -181,6 +181,7 @@ cond_dist <- function(x1,x2,g1,g2,stat,B,x3=NULL,g3=NULL,restricted=TRUE){
 ##' @param restricted Should group sizes be considered fixed
 ##' @return numeric vector
 ##' @author Florian Klinglmueller
+##' @export
 perm_dist <- function(x1,x2,g1,g2,stat,B,x3=NULL,g3=NULL,restricted=TRUE){
     omega <- omega(g1,g2,g3,restricted=restricted,B=B)
     stat(c(x1,x2,x3),omega)
@@ -198,12 +199,13 @@ perm_dist <- function(x1,x2,g1,g2,stat,B,x3=NULL,g3=NULL,restricted=TRUE){
 ##' @param B Number of permutations to use
 ##' @param x3 Third stage observations
 ##' @param g3 Third stage group assignments
+##' @param ... further arguments to perm_dist
 ##' @return p-value of the permutation test
 ##' @author Florian Klinglmueller
 ##'
 ##' @export
-perm_test <- function(x1,x2,g1,g2,stat,B,x3=NULL,g3=NULL){
-    cdist <- perm_dist(x1,x2,g1,g2,stat,B,x3,g3)
+perm_test <- function(x1,x2,g1,g2,stat,B,x3=NULL,g3=NULL,...){
+    cdist <- perm_dist(x1,x2,g1,g2,stat,B,x3,g3,...)
     mean(cdist>=stat(c(x1,x2,x3),c(g1,g2,g3)))
 }
 

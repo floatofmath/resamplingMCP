@@ -19,7 +19,7 @@ tn <- 120
 u <- rchisq(10,n)
 tu <- u+rchisq(10,tn-n)
 pu <- mpfr(u,200)
-ptu <- mpfr(tu,200)0
+ptu <- mpfr(tu,200)
 uu_1 <- sum(x <- rnorm(n))
 puu_1 <- mpfr(uu_1,200)
 uu_2 <- sum(x^2)

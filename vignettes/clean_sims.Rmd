@@ -1,0 +1,244 @@
+---
+title: "Simulation studies on the robustness of adaptive tests"
+subtitle: "Numerical results"
+author: Florian Klinglmueller
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Vignette Title}
+  \usepackage[utf8]{inputenc}
+---
+
+
+```{r}
+library(resamplingMCP)
+library(magrittr)
+library(plyr)
+library(dplyr)
+```
+## A number of different adaptive procedures
+
+```{r procs,echo=FALSE}
+
+## interface
+
+## permutation test
+
+adaptive_permtest_os <- function(x,n1,n,ne,test_statistic,B=10000,alpha=0.025){
+    if(ne>n){
+        xs <- split(x,rep(1:3,c(n1,n-n1,ne-n)))
+        gs <- split(sign(x)>0,rep(1:3,c(n1,n-n1,ne-n)))
+    } else {
+        xs <- split(x,rep(1:2,c(n1,ne-n1)))
+        gs <- split(sign(x)>0,rep(1:2,c(n1,ne-n1)))
+        gs[[3]] <- xs[[3]] <- numeric(0)
+    }
+    A <- permutation_CER(xs[[1]],gs[[1]],xs[[2]],test_statistic,one_sample=TRUE,restricted=FALSE,B=B,alpha=alpha)
+    q <- perm_test(xs[[2]],xs[[3]],gs[[2]],gs[[3]],test_statistic,restricted=FALSE,B=B)
+    A>=q
+}
+
+adaptive_ttest_os <- function(x,n1,n,ne,alpha=0.025) {
+    if(n == ne){
+        return(0.025 >= t.test(x,alternative='greater')$p.value)
+    }
+    xs <- split(x,rep(1:2,c(n1,ne-n1)))
+    V1 <- sum(xs[[1]])
+    U <- sum(xs[[1]]^2)
+    tU <- sum(xs[[2]]^2)
+    A <- clev(tU,U,V1,ne-n1,n,n1,alpha=alpha)
+    A >= t.test(xs[[2]],alternative='greater')$p.value
+}
+
+adaptive_invnormtest_os <- function(x,n1,n,ne,alpha=0.025){
+    xs <- split(x,rep(1:2,c(n1,ne-n1)))
+    p1 <- t.test(xs[[1]],alternative='greater')$p.value
+    p2 <- t.test(xs[[2]],alternative='greater')$p.value
+    alpha >= {sqrt(c(n1,n-n1)/n) * qnorm(c(p1,p2),lower=F)} %>% sum() %>% pnorm(lower=FALSE) 
+}
+
+inverse_normal <- function(p1,p2,w1,w2){
+    (sqrt(w1) * qnorm(p1,lower=F) + sqrt(w2) * qnorm(p2,lower=F)) %>% pnorm(lower=FALSE)
+}
+
+adaptive_npcombtest_os <- function(x,n1,n,ne,test_statistic,combination_function=inverse_normal,B=10000,alpha=0.025) {
+    xs <- split(x,rep(1:2,c(n1,ne-n1)))
+    gs <- split(sign(x)>0,rep(1:2,c(n1,ne-n1)))
+    G <- omega(gs[[1]],gs[[2]],restricted=FALSE,B=B)
+    rB <- ncol(G)
+    p1 <- 1-(rank(test_statistic(xs[[1]],G[1:n1,]))/(rB+1))
+    p2 <- 1-(rank(test_statistic(xs[[2]],G[(n1+1):ne,]))/(rB+1))
+    ct <- combination_function(p1,p2,n1/n,(n-n1)/n)
+    sum(ct[1]>=ct)/length(ct) <= alpha
+}
+```
+## Some examples
+
+```{r examples}
+n1 <- 6
+n <- 12
+ne <- 15
+x <- rnorm(15,1)
+
+c(adaptive_permtest_os(x,n1,n,ne,possum),
+  adaptive_ttest_os(x,n1,n,ne),
+  adaptive_invnormtest_os(x,n1,n,ne),
+  adaptive_npcombtest_os(x,n1,n,ne,possum))
+
+```
+## Some quick simulation studies
+
+```{r comparison function,echo=F}
+
+compare_adaptive_tests <- function(n1,n,rule,rdist,test_statistic,...){
+    x <- rdist(n,...)
+    ne <- rule(x[1:n1])
+    if(ne>n){
+        x <- c(x,rdist(ne-n,...))
+    } else {
+        ne <- n
+    }
+    list(permtest = adaptive_permtest_os(x,n1,n,ne,test_statistic),
+         ttest = adaptive_ttest_os(x,n1,n,ne),
+         invnorm = adaptive_invnormtest_os(x,n1,n,ne),
+         npcomb = adaptive_npcombtest_os(x,n1,n,ne,test_statistic))
+}
+    
+
+power.z.test <- function(power,delta,sd,sig.level=.025){
+    dfact <- qnorm(sig.level,lower.tail=F)+qnorm(1-power,lower.tail=F)
+    ceiling(sd/delta^2 * (dfact)^2)
+}
+    
+cond_power_rule_norm <- function(x1,m=1,target=.9,alpha=.025){
+    s <- var(x1)
+    dfact <- qnorm(alpha,lower.tail=F)+qnorm(1-target,lower.tail=F)
+    min(30,ceiling(s/m^2 * (dfact)^2))
+}
+
+cond_power_rule_t <- function(x1,m=1,target=.9,alpha=.025){
+    ceiling(power.t.test(power=target,delta=m,sd=sd(x),sig.level=alpha,type='one.sample',alternative='one.sided')$n)
+}
+```
+
+```{r try comparison}
+list(
+## one example fixed rule
+compare_adaptive_tests(6,12,function(x) 3,rnorm,diffmean,mean=.5),
+## one example conditional power rule
+compare_adaptive_tests(6,12,cond_power_rule_norm,rnorm,diffmean,mean=.5),
+## one example conditional power rule
+compare_adaptive_tests(6,12,cond_power_rule_t,rnorm,diffmean,mean=.5)) %>% bind_rows
+```
+
+```{r simulation example,eval=F}
+## lets replicate
+sim <- bind_rows(lapply(1:100,function(i) compare_adaptive_tests(10,20,cond_power_rule_norm,rnorm_scont,diffmean,mean=1,cmean=4,cprop=0.2,csd=.1)))
+colMeans(sim)
+```
+
+## Let's do all of this in a more systematic way
+
+
+### Small sample scenario
+
+We start with a preplanned sample size of twelve. Which provides $6$
+observations for each group. Such that we will start all trials with a
+first stage of size $6$ and second stage of at least $6$.
+
+### Normal distribution
+
+First let's have a look at the normal distribution. This is what both
+the adaptive $t$-test and the inverse normal combination (of
+$t$-tests) test assume.
+
+### Type 1 error 
+
+We look at a couple of parameter settings. First we consider scenarios
+under the null. The remaining parameters that are of most interest are
+preplanned sample size and the standard deviation of observations. The
+scenario is chosen such that if data were distributed with a mean of
+$\mu_0 = 1$ and standard deviation $\sigma_0 = 1$ a sample size of 12
+would give a power of roughly 88% for the one-sample $t$-test against
+a one-sided alternative (computed using R's function `power.t.test`).
+
+During the interim analysis the sample size for the second stage will
+be reassessed using a conditional power rule. That is, the variance is
+estimated using the observed first stage outcomes and the second stage
+sample size is increased to provide a conditional power of $90\%$
+using the standard normal sample size formula
+
+$$\left[\frac{\mu_0}{s(\boldsymbol{x}^F)} \left(\Phi^{-1}(1-\alpha) + \Phi^{-1}(1-\beta)\right)\right],$$
+
+where $s(\boldsymbol{x}^F)$ denotes the standard deviation estimated from the first
+stage observations, $\alpha$ is set to $0.025$ and $\beta = .1$.
+
+
+```{r sim_norm_null,eval=F}
+
+run_simulation <- function(n1,n,mean,sd,B=10,...) lapply(1:B,function(i) compare_adaptive_tests(n1,n,cond_power_rule_norm,rnorm,diffmean,mean=mean,sd=sd)) %>% bind_rows %>% colMeans
+
+scenarios <- expand.grid(n1=6,
+                         n=12,
+                         mean=0,
+                         sd=c(.5,1,1.5,2))
+                         
+library(parallel)
+options(mc.cores=3)
+lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(scenarios[p,],B=1000)))) %>% bind_rows -> sim_norm_null
+
+save(sim_norm_null,file="../data/sim_norm_null.rda")
+
+```
+
+```{r}
+library(pander)
+load("../data/sim_norm_null.rda")
+pander(sim_norm_null,split.tables=100)
+```
+
+
+```{r sim_norm_alt,eval=F}
+
+scenarios  <- expand.grid(n1=6,
+                          n=12,
+                          mean = round(seq(.1,1,.1),1),
+                          sd = 1)
+
+mclapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(scenarios[p,],B=1000)))) %>% bind_rows -> sim_norm_alt
+save(sim_norm_alt,file="../data/sim_norm_alt.rda")
+```
+
+```{r}
+library(pander)
+load("../data/sim_norm_alt.rda")
+pander(sim_norm_alt,split.tables=100)
+```
+
+
+## In a larger sample
+
+So far we have only looked at scenarios with a fairly limited sample
+size. As it turns out the non-parametric combination test is not very
+usefull in such a situation which is due to the discreteness of the
+permutation distribution.
+
+We now look at simulated trials with slightly larger sample sizes. We
+set the preplanned sample size to $n = 100$ with a first stage of $n^F
+= 50$. We simulate under the null hypothesis for standard deviations
+of $3, 9, 12, 18$. 
+
+```{r sim_norm_null_ls,eval=F}
+
+scenarios <- expand.grid(n1=50,
+                         n=100,
+                         mean=0,
+                         sd=c(3,9,12,18))
+                         
+library(parallel)
+options(mc.cores=3)
+lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(scenarios[p,],B=1000)))) %>% bind_rows -> sim_norm_null_ls
+
+save(sim_norm_null,file="../data/sim_norm_null_ls.rda")
+
+```

@@ -3,6 +3,7 @@ library(flip)
 library(resamplingMCP)
 library(ggplot2)
 library(reshape2)
+library(plyr)
 library(dplyr)
 library(magrittr)
 ```
@@ -31,7 +32,7 @@ compare_tvsp <- function(n,B,alpha=.05,rdist=rnorm_hetero,...) {
         x <- rdist(n,...)
         c(power_ttest = t.test(x,alternative='greater')$p.value,
           power_ptest = flip(x,tail=1)@res$`p-value`,
-          power_atest = hetero_ttest(x,s=10))
+          power_atest = hetero_ttest(x,s=2))
     },n=n,...)
     rowMeans(out<=alpha)
 }
@@ -42,6 +43,9 @@ power_comparison <- plist %>%
     do.call(what='rbind') %>%
         as.data.frame %>%
             melt(id.vars="ncp",variable.name='test',value.name='power')
+
+do.call('rbind',plist)
+
 
 pdf("/tmp/permutation_vs_ttest_hetero.pdf",width=7,height=4)
 qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
@@ -79,6 +83,22 @@ power_comparison <- plist4 %>%
 pdf("/tmp/permutation_vs_ttest_t4.pdf",width=7,height=4)
 qplot(ncp,power,linetype=test,data=power_comparison,geom='line')
 dev.off()
+
+library(parallel)
+options(mc.cores=3)
+plist5 <- mclapply(seq(0,3,.2),function(ncp) c(ncp=ncp,compare_tvsp(20,5000,rdist=rnorm_contaminated,mean=ncp,csigma=3)))
+
+power_comparison <- plist5 %>%
+    do.call(what='rbind') %>%
+        as.data.frame %>%
+            melt(id.vars="ncp",variable.name='test',value.name='power')
+
+pdf("/tmp/permutation_vs_ttest_normcont.pdf",width=7,height=4)
+ggplot(power_comparison)+geom_line(aes(ncp,power,linetype=test))
+dev.off()
+
+
+
 
 power_diff <- mutate(dcast(power_comparison,ncp~test),power_diff=power_ptest - power_ttest,power_rel=power_ptest/power_ttest-1)
 qplot(ncp,power_diff,data=power_diff,geom='line')
