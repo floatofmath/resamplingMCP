@@ -195,3 +195,26 @@ simulate_trials <- function(MCMC,n1,n,n3=0,r=1/2,rfs=rnorm,rss=rnorm,ncp=0,cond=
 ## expect_equal(unique(colSums(s1$g)),sum(floor(1/2*c(n1,n-n1))))
 ## expect_equal(unique(colSums(s1$g[1:n1,])),floor(1/2*n1))
 ## expect_equal(unique(colSums(s1$g[(n1+1):n,])),floor(1/2*(n-n1)))
+
+##' @title sample size formula one-sample z-test
+##' @param power desired power
+##' @param delta mean
+##' @param sd standard deviation
+##' @param sig.level significance level
+##' @return sample size
+##' @author Florian Klinglmueller
+power.z.test <- function(power,delta,sd,sig.level=.025){
+    dfact <- qnorm(sig.level,lower.tail=F)+qnorm(1-power,lower.tail=F)
+    ceiling(sd/delta^2 * (dfact)^2)
+}
+    
+cond_power_rule_norm <- function(x1,m=1,target=.9,alpha=.025){
+    s <- var(x1)
+    dfact <- qnorm(alpha,lower.tail=F)+qnorm(1-target,lower.tail=F)
+    min(30,ceiling(s/m^2 * (dfact)^2))
+}
+
+cond_power_rule_t <- function(x1,m=1,target=.9,alpha=.025){
+    ceiling(power.t.test(power=target,delta=m,sd=sd(x),sig.level=alpha,type='one.sample',alternative='one.sided')$n)
+}
+
