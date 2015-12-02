@@ -59,17 +59,43 @@ ccer_twosample <- function(uu2_1,uu2_2,uu1_1,uu1_2,v1,m,n,m1,n1,alpha){
 }
 
 ## slightly faster and numerically ok
-dutu <- function(u,tu,n,tn){
+dutu_cf <- function(u,tu,n,tn){
     gamma(tn/2)/(gamma(n/2)*gamma((tn-n)/2)) * compute_fraction(u,n/2-1,tu,tn/2-1)*(tu-u)^((tn-n)/2-1)
                                         #(u^(n/2-1)*(tu-u)^((tn-n)/2-1))/tu^(tn/2-1)
 }
+
+dutu_const <- function(n,tn){
+    gamma(tn/2)/(gamma(n/2)*gamma((tn-n)/2))
+}
+dutu_var <- function(u,tu,n,tn,mpfr){
+    if(mpfr){
+        u <- mpfr(u,300)
+        tu <- mpfr(tu,300)
+        (u^(n/2-1)*(tu-u)^((tn-n)/2-1))/tu^(tn/2-1)
+    } else {
+        return(compute_fraction(u,n/2-1,tu,tn/2-1)*(tu-u)^((tn-n)/2-1))
+    }
+}
+
+dutu_mpfr <- function(u,tu,n,tn){
+    u <- mpfr(u,500)
+    tu <- mpfr(tu,500)
+    gamma(tn/2)/(gamma(n/2)*gamma((tn-n)/2)) * (u^(n/2-1)*(tu-u)^((tn-n)/2-1))/tu^(tn/2-1)
+}
+
 
 ## numerically unstable
 dutu_chisq <- function(u,tu,n,tn){
     dchisq(tu-u,tn-n)*dchisq(u,n)/dchisq(tu,tn)
 }
 
-
+dutu  <- function(u,tu,n,tn,mpfr){
+    if(mpfr){
+        return(dutu_mpfr(u,tu,n,tn))
+    } else {
+        return(dutu_cf(u,tu,n,tn))
+    }
+}
 duutuu <- function(uu_1,uu_2,tuu_1,tuu_2,m,n,tm,tn){
     uu_1 <- mpfr(uu_1,10000)
     uu_2 <- mpfr(uu_2,10000)
@@ -167,12 +193,24 @@ clev_twosample <- function(tuu2,uu1,v1,tm2,tn2,m,n,m1,n1,alpha=0.025){
 ##' @template timmesfeld
 ##' @return Conditional level for the adapted test
 ##' @export
-clev <- function(tu2,u1,v1,tn2,n,n1,alpha=0.025){
-    f <- function(u2) ccer(u2,u1,v1,n,n1,alpha) * dutu(u2,tu2,n-n1,tn2)
-    integrate(f,lower=0,upper=tu2)$value
+##' @import Rmpfr
+clev <- function(tu2,u1,v1,tn2,n,n1,alpha=0.025,mpfr=F){
+    f <- function(u2) ccer(u2,u1,v1,n,n1,alpha) * dutu_var(u2,tu2,n-n1,tn2,mpfr) 
+                                        #    tol = ifelse(mpfr,.5*.Machine$double.eps^0.25,.Machine$double.eps^0.25)
+    if(mpfr){
+        expectation <- try(integrateR(f,lower=0,upper=tu2,rel.tol=1e-20)$value)
+    } else {
+        expectation <- try(integrate(f,lower=0,upper=tu2)$value)
+    }
+    if(class(expectation) == "try-error"){
+        browser()
+    }  
+    dutu_const(n-n1,tn2) * expectation
 }
 
 
+
+    
 ##' Computes the conditional critical value of the adaptive one-sided one-sample t-test for the null hypothesis mu=0 against the alternative mu > 0, given first stage sum of observations, sum of squares, and adapted secon stage sum of squares 
 ##' @title Conditional critical value adaptive t-test
 ##' @template timmesfeld

@@ -208,13 +208,36 @@ power.z.test <- function(power,delta,sd,sig.level=.025){
     ceiling(sd/delta^2 * (dfact)^2)
 }
     
-cond_power_rule_norm <- function(x1,m=1,target=.9,alpha=.025){
+##' Conditional power rule for the one-sample (or paired) z-test using the normal distribution sample size formula. Reestimates the standard deviation from the first stage and recomputes the sample size such that the power to reject the null meets the target power assuming that the mean (paired treatment difference) is equal to a prespecified value.
+##'
+##' @title Conditional power sample size reassessment rule (z-test)
+##' @template power_rules
+##' @author Florian Klinglmueller
+##' @export
+cond_power_rule_norm <- function(x1,m=1,target=.9,alpha=.025,maxN=Inf){
     s <- var(x1)
     dfact <- qnorm(alpha,lower.tail=F)+qnorm(1-target,lower.tail=F)
-    min(30,ceiling(s/m^2 * (dfact)^2))
+    min(ceiling(s/m^2 * (dfact)^2),maxN)
 }
 
-cond_power_rule_t <- function(x1,m=1,target=.9,alpha=.025){
-    ceiling(power.t.test(power=target,delta=m,sd=sd(x),sig.level=alpha,type='one.sample',alternative='one.sided')$n)
+##' Conditional power rule for the one-sample (or paired) t-test using the function \code{link{stats::power.t.test}}. Reestimates the standard deviation from the first stage and recomputes the sample size such that the power to reject the null meets the target power assuming that the mean (paired treatment difference) is equal to a prespecified value.
+##' @title Conditional power sample size reassessment rule (t-test)
+##' @template power_rules
+##' @author Florian Klinglmueller
+##' @export
+cond_power_rule_t <- function(x1,m=1,target=.9,alpha=.025,maxN=Inf){
+    min(maxN,ceiling(power.t.test(power=target,delta=m,sd=sd(x),sig.level=alpha,type='one.sample',alternative='one.sided')$n))
 }
 
+##' Computes the inverse normal combination (sqrt(w1)*qnorm(1-p1) + sqrt(w2)*qnorm(1-p2)) of two (independent) p-values
+##'
+##' @title Inverse normal combination function
+##' @param p1 First stage p-value
+##' @param p2 Second stage p-value
+##' @param w1 First stage weight
+##' @param w2 Second stage weight
+##' @return p-value corresponding to the inverse normal combination z-score
+##' @author Florian Klinglmueller
+inverse_normal <- function(p1,p2,w1,w2){
+    (sqrt(w1) * qnorm(p1,lower=F) + sqrt(w2) * qnorm(p2,lower=F)) %>% pnorm(lower=FALSE)
+}
