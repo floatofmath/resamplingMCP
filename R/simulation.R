@@ -51,7 +51,7 @@ adaptive_invnormtest_os <- function(x,n1,n,ne,alpha=0.025){
     xs <- split(x,rep(1:2,c(n1,ne-n1)))
     p1 <- t.test(xs[[1]],alternative='greater')$p.value
     p2 <- t.test(xs[[2]],alternative='greater')$p.value
-    alpha >= {sqrt(c(n1,n-n1)/n) * qnorm(c(p1,p2),lower=F)} %>% sum() %>% pnorm(lower=FALSE) 
+    pnorm(sum(sqrt(c(n1,n-n1)/n) * qnorm(c(p1,p2),lower=F)),lower=FALSE) <= alpha 
 }
 
 ##' Non-parametric combination of stage-wise test statistics. Combines stage-wise permutation p-values using some combination function; performs the test using the joint conditional permutation distribution of stage wise permutation p-values.
@@ -80,7 +80,7 @@ adaptive_invnormtest_2s <- function(x,y,n1,n,ne,m1,m,me,alpha=0.025){
     xs <- split(x,rep(1:2,c(n1,ne-n1)))
     p1 <- t.test(xs[[1]],alternative='greater')$p.value
     p2 <- t.test(xs[[2]],alternative='greater')$p.value
-    alpha >= {sqrt(c(n1,n-n1)/n) * qnorm(c(p1,p2),lower=F)} %>% sum() %>% pnorm(lower=FALSE) 
+    alpha >= pnorm(sum(sqrt(c(n1,n-n1)/n) * qnorm(c(p1,p2),lower=F)),lower=FALSE) 
 }
 
 
@@ -117,7 +117,7 @@ adaptive_invnormtest_2s <- function(x,y,n1,n,ne,m1,m,me,alpha=0.025){
     xs <- split(x,rep(1:2,c(n1,ne-n1)))
     p1 <- t.test(xs[[1]],alternative='greater')$p.value
     p2 <- t.test(xs[[2]],alternative='greater')$p.value
-    alpha >= {sqrt(c(n1,n-n1)/n) * qnorm(c(p1,p2),lower=F)} %>% sum() %>% pnorm(lower=FALSE) 
+    alpha >= pnorm(sum(sqrt(c(n1,n-n1)/n) * qnorm(c(p1,p2),lower=F)),lower=FALSE) 
 }
 
 

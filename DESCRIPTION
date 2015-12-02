@@ -6,8 +6,6 @@ Description: Resampling and permutation tests for graph-based multiple
     comparison procedures
 Depends:
     R (>= 3.1.2),
-    flip (>= 2.4.3),
-    gMCP (>= 0.8-10),
     matrixStats
 Suggests:
     testthat

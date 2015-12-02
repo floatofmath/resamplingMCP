@@ -241,3 +241,19 @@ cond_power_rule_t <- function(x1,m=1,target=.9,alpha=.025,maxN=Inf){
 inverse_normal <- function(p1,p2,w1,w2){
     (sqrt(w1) * qnorm(p1,lower=F) + sqrt(w2) * qnorm(p2,lower=F)) %>% pnorm(lower=FALSE)
 }
+
+
+##' recycle vector to match the length of another
+##'
+##' @title recycle
+##' @param a vector to be recycled
+##' @param b vector to be matched
+##' @return vector of length at least \code{b}
+##' @author Florian Klinglmueller
+recycle <- function(a,b){
+    if(length(a) < length(b)){
+        rep(a,length.out(b))
+    } else {
+        a
+    }
+}

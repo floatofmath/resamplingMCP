@@ -162,9 +162,8 @@ duutuu <- function(uu_1,uu_2,tuu_1,tuu_2,m,n,tm,tn){
 ##' @param alpha Significance level
 ##' @author Florian Klinglmueller
 ##' @return Conditional level of an extended two sample t-test
-##' @export
-##' @import pracma
 clev_twosample <- function(tuu2,uu1,v1,tm2,tn2,m,n,m1,n1,alpha=0.025){
+# ##' @import pracma
     m2 <- m-m1
     n2 <- n-n1
     f <- function(x,y) {
@@ -193,8 +192,8 @@ clev_twosample <- function(tuu2,uu1,v1,tm2,tn2,m,n,m1,n1,alpha=0.025){
 ##' @template timmesfeld
 ##' @return Conditional level for the adapted test
 ##' @export
-##' @import Rmpfr
 clev <- function(tu2,u1,v1,tn2,n,n1,alpha=0.025,mpfr=F){
+# ##' @import Rmpfr
     f <- function(u2) ccer(u2,u1,v1,n,n1,alpha) * dutu_var(u2,tu2,n-n1,tn2,mpfr) 
                                         #    tol = ifelse(mpfr,.5*.Machine$double.eps^0.25,.Machine$double.eps^0.25)
     if(mpfr){

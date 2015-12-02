@@ -17,10 +17,7 @@ library(plyr)
 library(dplyr)
 library(pander)
 library(parallel)
-library(bt88.03.704)
 options(mc.cores=detectCores()-1)
-
-
 ```
 
 ## One-sample test procedures for adaptive designs
@@ -226,10 +223,10 @@ $.1$. The standard deviation of outcomes is fixed at $\sigma = 1$.
 ```{r sim_norm_alt,eval=F}
 scenarios  <- expand.grid(n1=6,
                           n=12,
-                          mean = round(seq(.1,1,.1),1),
-                          sd = 1)
+                          mean = round(seq(.1,1.5,.1),1),
+                          sd = c(1,1.5))
 
-lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(scenarios[p,],B=50000)))) %>%
+lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(scenarios[p,],B=10000)))) %>%
     bind_rows ->
         sim_norm_alt
 

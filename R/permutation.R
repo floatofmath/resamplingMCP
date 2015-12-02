@@ -94,8 +94,8 @@ join_to_row <- function(c1,c2){
 ##' @return logical matrix of dimension \code{sum(ns)} \times \code{prod(choose(ns,ks))}
 ##' @author Florian Klinglmueller
 strat_reassignments <- function(ns,ks,restricted=TRUE,B=NULL){
-    ns <- bt88.03.704::recycle(ns,ks)
-    ks <- bt88.03.704::recycle(ks,ns)
+    ns <- recycle(ns,ks)
+    ks <- recycle(ks,ns)
     if(restricted){
         n_combs <- prod(choose(ns,ks))
     } else {
