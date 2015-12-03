@@ -13,7 +13,7 @@ permutation_CER(x1, g1, x2, stat = sumdiff, B = 1000, alpha = 0.025,
 
 \item{g1}{vector of first stage treatment assignments}
 
-\item{x2}{vector of preplanned first stage observations}
+\item{x2}{vector of preplanned second stage observations}
 
 \item{stat}{function computing the test statistic (see Details)}
 

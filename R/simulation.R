@@ -10,14 +10,14 @@ adaptive_permtest_os <- function(x,n1,n,ne,test_statistic,perms=50000,alpha=0.02
     if(ne>n){
         xs <- split(x,rep(1:3,c(n1,n-n1,ne-n)))
         gs <- split(sign(x)>0,rep(1:3,c(n1,n-n1,ne-n)))
+        A <- permutation_CER(xs[[1]],gs[[1]],xs[[2]],test_statistic,one_sample=TRUE,restricted=FALSE,B=perms,alpha=alpha)
+        q <- perm_test(xs[[2]],xs[[3]],gs[[2]],gs[[3]],test_statistic,restricted=FALSE,B=perms)
+        return(A>=q)
     } else {
         xs <- split(x,rep(1:2,c(n1,ne-n1)))
         gs <- split(sign(x)>0,rep(1:2,c(n1,ne-n1)))
-        gs[[3]] <- xs[[3]] <- numeric(0)
+        return(alpha>=perm_test(xs[[1]],xs[[2]],gs[[1]],gs[[2]],test_statistic,restricted=FALSE,B=perms))
     }
-    A <- permutation_CER(xs[[1]],gs[[1]],xs[[2]],test_statistic,one_sample=TRUE,restricted=FALSE,B=perms,alpha=alpha)
-    q <- perm_test(xs[[2]],xs[[3]],gs[[2]],gs[[3]],test_statistic,restricted=FALSE,B=perms)
-    A>=q
 }
 
 
