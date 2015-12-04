@@ -168,12 +168,12 @@ permutation_CER2 <- function(x1,g1,x2,x3,stat=sumdiff,
         x2 <- abs(x2)
     }
     ## balanced second stage!!
-    dist <- perm_dist(x1,x2,g1,g2,stat,B,restricted=restricted,...)
-    m <- length(dist)
-    talpha <- min(dist[rank(dist,ties.method='min')>=ceiling((1-alpha)*m)])
     cers <- sapply(1:resamples,function(i){
-        x2 <- sample(c(x2,x3),length(x2))
-        cdist <- cond_dist(x1,x2,g1,g2,stat,B,restricted=restricted,...)
+        x2r <- sample(c(x2,x3),length(x2))
+        dist <- perm_dist(x1,x2r,g1,g2,stat,B,restricted=restricted,...)
+        m <- length(dist)
+        talpha <- min(dist[rank(dist,ties.method='min')>=ceiling((1-alpha)*m)])
+        cdist <- cond_dist(x1,x2r,g1,g2,stat,B,restricted=restricted,...)
         mean(cdist>talpha)
     })
     ##    pvals <- unlist(lapply(cdist,function(x) sum(dist>=x)/B))
