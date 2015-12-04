@@ -42,3 +42,16 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// random_samples_cpp
+NumericMatrix random_samples_cpp(const NumericVector xs, const int k, const int nsam);
+RcppExport SEXP resamplingMCP_random_samples_cpp(SEXP xsSEXP, SEXP kSEXP, SEXP nsamSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const NumericVector >::type xs(xsSEXP);
+    Rcpp::traits::input_parameter< const int >::type k(kSEXP);
+    Rcpp::traits::input_parameter< const int >::type nsam(nsamSEXP);
+    __result = Rcpp::wrap(random_samples_cpp(xs, k, nsam));
+    return __result;
+END_RCPP
+}

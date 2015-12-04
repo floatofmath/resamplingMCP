@@ -13,3 +13,7 @@ random_reassignments_cpp <- function(g, nperm = 1000L) {
     .Call('resamplingMCP_random_reassignments_cpp', PACKAGE = 'resamplingMCP', g, nperm)
 }
 
+random_samples_cpp <- function(xs, k, nsam = 1000L) {
+    .Call('resamplingMCP_random_samples_cpp', PACKAGE = 'resamplingMCP', xs, k, nsam)
+}
+

@@ -33,4 +33,4 @@ NumericMatrix random_samples_cpp(const NumericVector xs, const int k, const int 
   for (i=0; i<nsam; i++) ans(_,i) = sampleNum(xxs,k);
   return ans;
 }
-    
+

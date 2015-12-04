@@ -126,7 +126,6 @@ permutation_CER <- function(x1,g1,x2,stat=sumdiff,
   c(cer1)
 }
 
-
 ##' Computes the conditional type I error rate of a pre-planned permutation test in a two-stage adaptive design. We condition on the observed first stage data and treatment assignment as well as the observed second stage data as well as the observations from the extension of the trial.
 ##'
 ##' Based on the first stage data and treatment assignments one may perform sample size reassassment - and possibly other trial modifications - as long as the (preplanned) second stage sample size is not reduced.
@@ -179,4 +178,68 @@ permutation_CER2 <- function(x1,g1,x2,x3,stat=sumdiff,
     ##    pvals <- unlist(lapply(cdist,function(x) sum(dist>=x)/B))
     ##    cer2 <- sum(pvals<=alpha)/B
     mean(cers)
+}
+
+##' Computes the conditional type I error rate of a pre-planned permutation test in a two-stage adaptive design. We condition on the observed first stage data and treatment assignment as well as the observed second stage data as well as the observations from the extension of the trial.
+##'
+##' Based on the first stage data and treatment assignments one may perform sample size reassassment - and possibly other trial modifications - as long as the (preplanned) second stage sample size is not reduced.
+##'
+##' \code{stat} needs to be a function of the form \code{function(x,g,...)} returning a numeric of length one. Possible options are \code{\link{sumdiff}}, \code{\link{meandiff}}, \code{\link{zstat}}
+##'
+##' For the moment, we assume that observations are randomized using random allocation blocked by stages, (i.e. we resample using \code{sample (g1)}). \code{g2} does not have to be the actual second stage treatment assignments but just one possible example randomization, that fixes the treatment group sizes. 
+##'
+##' @title Permutation Conditional Error Rate
+##' @param x1 vector of preplanned first stage observations
+##' @param g1 vector of first stage treatment assignments
+##' @param x2 vector of preplanned second stage observations
+##' @param x3 vector of observations from the extended trial
+##' @param stat function computing the test statistic (see Details)
+##' @param B number of permutations (rerandomizations) used to compute unconditional and conditional permutation distributions
+##' @param alpha pre-fixed significance level
+##' @param g2 template vector for second stage treatment assignments
+##' @param each 
+##' @param ... additional options to \code{stat}
+##' @return numeric value of the conditional error rate
+##' 
+##' @author Florian Klinglmueller
+##' 
+##' @export
+permutation_CER3 <- function(x1,g1,x2,x3,stat=sumdiff,
+                             B = 1000, resamples = 1000, alpha=.025,
+                             g2=rep(c(-1,1),each=length(x2)/2),one_sample=FALSE,
+                             restricted=TRUE,...){
+    n1 <- length(g1)
+    n <- length(c(x1,x2))
+    n2 <- n-n1
+    nt <- length(c(x1,x2,x3))
+    ne <- nt-n
+    if(ne == 0) stop("Conditional should not be computed if sample size is not increased")
+    ## right parameter setting for one_sample
+    if(one_sample&restricted) warning("Only un-restricted sampling is allowed for one-sample setting!")
+    if(one_sample) {
+        restricted <- FALSE 
+        g1 <- sign(x1)
+        x1 <- abs(x1)
+        g2 <- sign(x2)
+        x2 <- abs(x2)
+    }
+    ## balanced second stage!!
+    
+    if(resamples > choose(n2+ne,n2)){
+        x2rs <- t(random_samples_cpp(c(x2,x3),n2,resamples))
+    } else {
+        x2rs <- matrix(c(x2,x3)[gtools::combinations(n2+ne,n2)],ncol=n2)
+    }
+    cers <- apply(x2rs,1,cer,x1=x1,g1=g1,g2=g2,stat=stat,B=B,restricted=restricted,alpha=alpha,...)
+    ##    pvals <- unlist(lapply(cdist,function(x) sum(dist>=x)/B))
+    ##    cer2 <- sum(pvals<=alpha)/B
+    mean(cers)
+}
+
+cer <- function(x1,x2,g1,g2,stat,B,restricted,alpha,...){
+    dist <- perm_dist(x1,x2,g1,g2,stat,B,restricted=restricted,...)
+    m <- length(dist)
+    talpha <- min(dist[rank(dist,ties.method='min')>=ceiling((1-alpha)*m)])
+    cdist <- resamplingMCP:::cond_dist(x1,x2,g1,g2,stat,B,restricted=restricted,...)
+    mean(cdist>talpha)
 }
