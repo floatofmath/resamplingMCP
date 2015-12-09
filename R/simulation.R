@@ -10,7 +10,8 @@ adaptive_permtest_os <- function(x,n1,n,ne,test_statistic,perms=50000,alpha=0.02
     if(ne>n){
         xs <- split(x,rep(1:3,c(n1,n-n1,ne-n)))
         gs <- split(sign(x)>0,rep(1:3,c(n1,n-n1,ne-n)))
-        A <- permutation_CER(xs[[1]],gs[[1]],xs[[2]],test_statistic,one_sample=TRUE,restricted=FALSE,B=perms,alpha=alpha)
+        A <- permutation_CER(xs[[1]],gs[[1]],xs[[2]],test_statistic,one_sample=TRUE,restricted=FALSE,
+                             permutations=perms,alpha=alpha)
         q <- perm_test(xs[[2]],xs[[3]],gs[[2]],gs[[3]],test_statistic,restricted=FALSE,B=perms)
         return(A>=q)
     } else {
@@ -107,7 +108,7 @@ adaptive_permtest_2s <- function(x,y,n1,n,ne,m1,m,me,test_statistic,perms=50000,
     }
     gs <- lapply(1:length(xs),function(i) rep(0:1,c(length(xs[[i]],ys[[i]]))))
     xs <- lapply(1:length(xs),function(i) c(xs[[i]],ys[[i]]))
-    A <- permutation_CER(xs[[1]],gs[[1]],xs[[2]],test_statistic,B=perms,alpha=alpha)
+    A <- permutation_CER(xs[[1]],gs[[1]],xs[[2]],test_statistic,permutations=perms,alpha=alpha)
     q <- perm_test(xs[[2]],xs[[3]],gs[[2]],gs[[3]],test_statistic,B=perms)
     A>=q
 }

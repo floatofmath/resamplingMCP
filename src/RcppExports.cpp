@@ -55,3 +55,27 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// combinations_cpp
+IntegerMatrix combinations_cpp(const int n, const int k);
+RcppExport SEXP resamplingMCP_combinations_cpp(SEXP nSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const int >::type n(nSEXP);
+    Rcpp::traits::input_parameter< const int >::type k(kSEXP);
+    __result = Rcpp::wrap(combinations_cpp(n, k));
+    return __result;
+END_RCPP
+}
+// subsamples_cpp
+NumericMatrix subsamples_cpp(NumericVector xs, const int k);
+RcppExport SEXP resamplingMCP_subsamples_cpp(SEXP xsSEXP, SEXP kSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericVector >::type xs(xsSEXP);
+    Rcpp::traits::input_parameter< const int >::type k(kSEXP);
+    __result = Rcpp::wrap(subsamples_cpp(xs, k));
+    return __result;
+END_RCPP
+}

@@ -17,3 +17,11 @@ random_samples_cpp <- function(xs, k, nsam = 1000L) {
     .Call('resamplingMCP_random_samples_cpp', PACKAGE = 'resamplingMCP', xs, k, nsam)
 }
 
+combinations_cpp <- function(n, k) {
+    .Call('resamplingMCP_combinations_cpp', PACKAGE = 'resamplingMCP', n, k)
+}
+
+subsamples_cpp <- function(xs, k) {
+    .Call('resamplingMCP_subsamples_cpp', PACKAGE = 'resamplingMCP', xs, k)
+}
+

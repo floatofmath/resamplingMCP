@@ -9,7 +9,7 @@
 all_reassignments <- function(n,k){
     N <- choose(n,k)
     M <- matrix(0L,n,N)
-    M[cbind(as.integer(gtools::combinations(n,k)),rep(1:N,k))] <- 1L
+    M[cbind(as.integer(combinations_cpp(n,k)),rep(1:N,each=k))] <- 1L
     M
 }
 
@@ -20,7 +20,7 @@ all_reassignments <- function(n,k){
 ##' @return integer matrix of size \code{n} x \code{2^n}
 ##' @author Florian Klinglmueller
 all_assignments <- function(n){
-    t(e1071::bincombinations(n))
+    t(bincombinations_cpp(n))
 }
 
 ##' Returns a logical matrix with B random assignments (e.g. of patients) of \code{n} objects to two groups (e.g. treatment and control)
