@@ -58,16 +58,16 @@ compare_adaptive_tests <- function(n1,n,rule,rdist,test_statistic,mpfr=F,resam=1
         ne <- n
     }
     list(ne = ne,
-         permtest = adaptive_permtest_os(x,n1,n,ne,test_statistic,perms=perms),
+##         permtest = adaptive_permtest_os(x,n1,n,ne,test_statistic,perms=perms),
          permtest2 = adaptive_permtest2_os(x,n1,n,ne,test_statistic,perms=perms,resam=resam),
 ##         ttest = adaptive_ttest_os(x,n1,n,ne,mpfr=mpfr),
-         invnorm = adaptive_invnormtest_os(x,n1,n,ne),
-         npcomb = adaptive_npcombtest_os(x,n1,n,ne,test_statistic))
+         invnorm = adaptive_invnormtest_os(x,n1,n,ne))
+##         npcomb = adaptive_npcombtest_os(x,n1,n,ne,test_statistic))
 }
 
 run_simulation <- function(n1,n,mean,sd,B=10,resam=100,perms=100,...){
     results <- mclapply2(1:B,function(i) compare_adaptive_tests(n1,n,cond_power_rule_norm,rnorm,diffmean,mean=mean,sd=sd,resam=resam,perms=perms,...))
-    results %>% bind_rows %>% summarize(ASN=mean(ne),maxSN=max(ne),permtest=mean(permtest),permtest2=mean(permtest2),invnorm=mean(invnorm),npcomb=mean(npcomb))
+    results %>% bind_rows %>% summarize(ASN=mean(ne),maxSN=max(ne),permtest2=mean(permtest2),invnorm=mean(invnorm))#,npcomb=mean(npcomb),permtest=mean(permtest))
 }
 
 ```
@@ -247,7 +247,7 @@ save(sim_norm_null,file="../data/sim_norm_alt_ls.rda")
 ```{r invnorm}
 run_simulation_cont <- function(n1,n,mean,sd,cshift,csd,cprop,B=10,resam=100,perms=100,...){
     results <- mclapply2(1:B,function(i) compare_adaptive_tests(n1,n,cond_power_rule_norm,rnorm_cont,diffmean,mean=mean,sd=sd,cshift=cshift,csd=csd,cprop=cprop,resam=resam,perms=perms,...))
-    results %>% bind_rows %>% summarize(ASN=mean(ne),maxSN=max(ne),permtest=mean(permtest),permtest2=mean(permtest2),invnorm=mean(invnorm),npcomb=mean(npcomb))
+    results %>% bind_rows %>% summarize(ASN=mean(ne),maxSN=max(ne),permtest2=mean(permtest2),invnorm=mean(invnorm))#,npcomb=mean(npcomb),permtest=mean(permtest))
 }
 
 scenarios <- expand.grid(n1=6,
@@ -264,7 +264,7 @@ lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation_con
     bind_rows ->
     test_sim
 
-sim <- run_simulation_cont(6,12,1,1,cshift=0,csd=10,.2,B=1000,perms=1000,resam=1000)
+sim <- run_simulation_cont(20,40,1,1,cshift=0,csd=3,.1,B=1000,perms=1000,resam=100)
 sim
 
 ```
