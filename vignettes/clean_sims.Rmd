@@ -11,13 +11,13 @@ vignette: >
 
 
 ```{r}
-library(resamplingMCP)
 library(magrittr)
 library(plyr)
 library(dplyr)
 library(pander)
 library(parallel)
 library(bt88.03.704)
+library(resamplingMCP)
 options(mc.cores=detectCores()-1)
 ```
 
@@ -34,9 +34,7 @@ options(mc.cores=detectCores()-1)
 ##' @author Florian Klinglmueller
 ##' @export
 adaptive_permtest2_os <- function(x,n1,n,ne,test_statistic,perms=50000,resam=100,alpha=0.025){
-    ##:ess-bp-start::conditional@resam == 100:##
-browser(expr={resam == 100})##:ess-bp-end:##
-if(ne>n){
+    if(ne>n){
         xs <- split(x,rep(1:3,c(n1,n-n1,ne-n)))
         gs <- split(sign(x)>0,rep(1:3,c(n1,n-n1,ne-n)))
         A <- permutation_CER2(xs[[1]],gs[[1]],xs[[2]],xs[[3]],test_statistic,one_sample=TRUE,restricted=FALSE,
@@ -154,9 +152,9 @@ stage observations, $\alpha$ is set to $0.025$ and $\beta = .1$.
 scenarios <- expand.grid(n1=6,
                          n=12,
                          mean=1,
-                         sd=c(1.5),resam=c(1000,10000))
+                         sd=c(1.5),resam=c(100,1000,10000),perms=c(100,1000,10000))
 
-lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(scenarios[p,],B=500)))) %>%
+lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(scenarios[p,],B=1000)))) %>%
     bind_rows ->
     test_sim
 

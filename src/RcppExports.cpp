@@ -79,3 +79,14 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// bincombinations_cpp
+IntegerMatrix bincombinations_cpp(const int p);
+RcppExport SEXP resamplingMCP_bincombinations_cpp(SEXP pSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< const int >::type p(pSEXP);
+    __result = Rcpp::wrap(bincombinations_cpp(p));
+    return __result;
+END_RCPP
+}

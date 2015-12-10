@@ -25,3 +25,7 @@ subsamples_cpp <- function(xs, k) {
     .Call('resamplingMCP_subsamples_cpp', PACKAGE = 'resamplingMCP', xs, k)
 }
 
+bincombinations_cpp <- function(p) {
+    .Call('resamplingMCP_bincombinations_cpp', PACKAGE = 'resamplingMCP', p)
+}
+
