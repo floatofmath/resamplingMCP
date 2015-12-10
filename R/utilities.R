@@ -51,12 +51,8 @@ rnorm_tcont <- function(n,mean=0,sd=1,cprop=.1,csd=3){
 ##' @author Florian Klinglmueller
 ##' @export
 rnorm_scont <- function(n,mean=0,sd=1,cprop=.1,cmean=3,csd=sd){
-    if(n == 1)
-        return(rnorm(1,mean=mean,sd=sample(c(sd,csd),1)))
-    m <- ceiling(n*(1-cprop))
-    k <- n-m
-    out <- sample(c(rnorm(m,mean=mean,sd=sd),
-                    sample(c(-1,1),k,replace=TRUE)*rnorm(k,mean=mean+cmean,sd=csd)))
+    cont <- sample(-1:1,n,prob=c(cprop/2,1-cprop,cprop/2),replace=TRUE)
+    out <- rnorm(n,mean=mean,sd=sd) * (csd/sd)^abs(cont) + cmean*cont
     out
 }
 
