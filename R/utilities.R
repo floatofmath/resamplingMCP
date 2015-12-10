@@ -21,38 +21,21 @@ rnorm_hetero <- function(n,df=1,ncp=0){
 }
 
 
-##' Simulate from a tail contaminated normal distribution
+##' Simulate from a contaminated normal distribution. A proportion \code{csd} of random samples are scaled by \code{csd} and randomly shifted to the left or right by \code{cshift}.  
 ##'
 ##' @title Generate contaminated normally distributed data
 ##' @param n number of observations
 ##' @param mean mean value
 ##' @param sd standard deviation 
 ##' @param cprop proportion of contaminated samples
+##' @param cshift mean shift of contaminated samples
 ##' @param csd standard deviation of contaminated samples
 ##' @return vector with \code{n} pseudo random numbers
 ##' @author Florian Klinglmueller
 ##' @export
-rnorm_tcont <- function(n,mean=0,sd=1,cprop=.1,csd=3){
-    if(n == 1)
-        return(rnorm(1,mean=mean,sd=sample(c(sd,csd),1)))
-    out <- sample(c(rnorm(ceiling(n*(1-cprop)),mean=mean,sd=sd),rnorm(floor(n*cprop),mean=mean,sd=csd)))
-    out
-}
-
-##' Simulate from a location shift contaminated normal distribution
-##'
-##' @title Generate contaminated normally distributed data
-##' @param n number of observations
-##' @param mean mean value
-##' @param sd standard deviation 
-##' @param cprop proportion of contaminated samples
-##' @param cmean standard deviation of contaminated samples
-##' @return vector with \code{n} pseudo random numbers
-##' @author Florian Klinglmueller
-##' @export
-rnorm_scont <- function(n,mean=0,sd=1,cprop=.1,cmean=3,csd=sd){
+rnorm_cont <- function(n,mean=0,sd=1,cprop=.1,cshift=3,csd=sd){
     cont <- sample(-1:1,n,prob=c(cprop/2,1-cprop,cprop/2),replace=TRUE)
-    out <- rnorm(n,mean=mean,sd=sd) * (csd/sd)^abs(cont) + cmean*cont
+    out <- rnorm(n,mean=mean,sd=sd) * (csd/sd)^abs(cont) + cshift*cont
     out
 }
 
