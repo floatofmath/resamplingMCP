@@ -37,6 +37,25 @@ diffmean <- function(x,g){
     }
 }
 
+##' Median of paired differences. Usefull in one-sample tests. 
+##'
+##' @template matrix_stats_details
+##' @title Median of paired differences
+##' @author Florian Klinglmueller
+##' @export
+diffmedian <- function(x,g){
+    if(is.matrix(g)){
+        if(is.matrix(x)){
+            stop("Only one of g or x may be passed as a matrix")
+        }
+        colMedians(abs(x) * (((g>0)*2)-1))
+    } else if(is.matrix(x)){
+        colMedians(abs(x) * (((g>0)*2)-1))
+    } else {
+        median(abs(x) * (((g>0)*2)-1))
+    }
+}
+
 
 
 

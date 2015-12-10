@@ -4,6 +4,16 @@ using namespace Rcpp;
 using namespace arma;
 
 // [[Rcpp::export]]
+NumericVector diffmeanC(NumericVector x, IntegerMatrix g){
+  // g must be encoded as -1, 1!!
+  mat gt = as<mat>(g);
+  vec xs = as<vec>(x);
+  mat ts = xs.t() * gt;
+  return( wrap(ts) );
+}
+
+
+// [[Rcpp::export]]
 NumericVector sumdiffC(NumericVector x, IntegerMatrix g){
   mat gt = as<mat>(g);
   mat gc = ones(g.nrow(),g.ncol())-gt;

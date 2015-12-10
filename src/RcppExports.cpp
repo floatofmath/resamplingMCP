@@ -6,6 +6,18 @@
 
 using namespace Rcpp;
 
+// diffmeanC
+NumericVector diffmeanC(NumericVector x, IntegerMatrix g);
+RcppExport SEXP resamplingMCP_diffmeanC(SEXP xSEXP, SEXP gSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< IntegerMatrix >::type g(gSEXP);
+    __result = Rcpp::wrap(diffmeanC(x, g));
+    return __result;
+END_RCPP
+}
 // sumdiffC
 NumericVector sumdiffC(NumericVector x, IntegerMatrix g);
 RcppExport SEXP resamplingMCP_sumdiffC(SEXP xSEXP, SEXP gSEXP) {
