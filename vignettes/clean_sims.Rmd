@@ -70,6 +70,8 @@ run_simulation <- function(n1,n,mean,sd,B=10,resam=100,perms=100,...){
     results %>% bind_rows %>% summarize(ASN=mean(ne),maxSN=max(ne),permtest2=mean(permtest2),invnorm=mean(invnorm))#,npcomb=mean(npcomb),permtest=mean(permtest))
 }
 
+
+
 ```
 
 
@@ -193,7 +195,7 @@ lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(
     bind_rows ->
         sim_norm_alt
 
-save(sim_norm_alt,file="../data/sim_norm_alt.rda")
+save(sim_norm_alt,file=vfile("../data/sim_norm_alt",ending="rda"))
 ```
 
 ```{r}
@@ -238,13 +240,13 @@ scenarios <- expand.grid(n1=50,
 library(parallel)
 lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation',c(scenarios[p,],B=1000)))) %>% bind_rows -> sim_norm_alt_ls
 
-save(sim_norm_null,file="../data/sim_norm_alt_ls.rda")
+save(sim_norm_null,file=vfile("../data/sim_norm_alt_ls"))
 
 
 ```
 ## Non-normal data
 
-```{r invnorm}
+```{r invnorm,eval=F,echo=F}
 run_simulation_cont <- function(n1,n,mean,sd,cshift,csd,cprop,B=10,resam=100,perms=100,...){
     results <- mclapply2(1:B,function(i) compare_adaptive_tests(n1,n,cond_power_rule_norm,rnorm_cont,diffmean,mean=mean,sd=sd,cshift=cshift,csd=csd,cprop=cprop,resam=resam,perms=perms,...))
     results %>% bind_rows %>% summarize(ASN=mean(ne),maxSN=max(ne),permtest2=mean(permtest2),invnorm=mean(invnorm))#,npcomb=mean(npcomb),permtest=mean(permtest))
@@ -252,8 +254,8 @@ run_simulation_cont <- function(n1,n,mean,sd,cshift,csd,cprop,B=10,resam=100,per
 
 scenarios <- expand.grid(n1=6,
                          n=12,
-                         mean=1,
-                         sd=1,
+                         mean=round(seq(0,1.2,.3),2),
+                         sd=c(1,1.5),
                          cshift = 0,
                          csd = c(3,10),
                          cprop = c(.1,.3),
@@ -262,9 +264,108 @@ scenarios <- expand.grid(n1=6,
 
 lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation_cont',c(scenarios[p,],B=1000)))) %>%
     bind_rows ->
-    test_sim
+    sim_normcont
 
-sim <- run_simulation_cont(20,40,1,1,cshift=0,csd=3,.1,B=1000,perms=1000,resam=100)
-sim
+save(sim_normcont,file=vfile("../data/sim_norm_cont"))
+
+```
+```{r invnorm_limit,eval=F,echo=F}
+
+cond_power_rule_norm_triple <- function(x1){
+    cond_power_rule_norm(x1,maxN=length(x1)*3)
+}
+
+run_simulation_cont_cap<- function(n1,n,mean,sd,cshift,csd,cprop,B=10,resam=100,perms=100,...){
+    results <- mclapply2(1:B,function(i) compare_adaptive_tests(n1,n,cond_power_rule_norm_triple,rnorm_cont,signedranks,mean=mean,sd=sd,cshift=cshift,csd=csd,cprop=cprop,resam=resam,perms=perms,...))
+    results %>% bind_rows %>% summarize(ASN=mean(ne),maxSN=max(ne),permtest2=mean(permtest2),invnorm=mean(invnorm))#,npcomb=mean(npcomb),permtest=mean(permtest))
+}
+
+scenarios <- expand.grid(n1=6,
+                         n=12,
+                         mean=round(seq(0,1.2,.3),2),
+                         sd=c(1,1.5),
+                         cshift = 0,
+                         csd = c(3,10),
+                         cprop = c(.1,.3),
+                         perms = 10000,
+                         resam = 10000)
+
+simAlt <- run_simulation_cont_cap(n1=6,n=12,mean=1,sd=1.2,cshift=0,csd=3,cprop=.1,B=1000,perms=1000,resam=1000)
+simNull <- run_simulation_cont_cap(n1=6,n=12,mean=0,sd=1.2,cshift=0,csd=3,cprop=.1,B=1000,perms=1000,resam=1000)
+
+lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_simulation_cont_cap',c(scenarios[p,],B=1000)))) %>%
+    bind_rows ->
+    sim_normcont_rk
+
+save(sim_normcont_rk,file=vfile("../data/sim_norm_cont_rk"))
+
+```
+
+```{r master_simulation,eval=F,echo=F}
+run_scenario <- function(B,...){
+    ## just a wrapper around mclapply2
+    results <- mclapply2(1:B,function(i) compare_adaptive_tests(...))
+    results %>% bind_rows %>% summarize(ASN=mean(ne),maxSN=max(ne),permtest2=mean(permtest2),invnorm=mean(invnorm))#,npcomb=mean(npcomb),permtest=mean(permtest))
+}
+
+run_simulation_general <- function(scenarios,B=100,...){
+    params <- list(...)
+    bind_rows(lapply(1:nrow(scenarios),function(p) c(scenarios[p,],do.call('run_scenario',c(B=B,scenarios[p,],params)))))
+}
+scenarios_test <- expand.grid(n1=6,
+                              n=12,
+                              mean=round(seq(0,1.2,.6),2),
+                              sd=c(1,1.2),
+                              perms = 500,
+                              resam = 500)
+
+quicktest <- run_simulation_general(scenarios_test,B=100,rule=cond_power_rule_norm,test_statistic=diffmean,rdist=rnorm)
+
+
+scenarios_normal_small <- expand.grid(n1=6,
+                                      n=12,
+                                      mean=round(seq(0,1,.5),2),
+                                      sd=c(1,1.2,1.5),
+                                      perms = 50000,
+                                      resam = 10000)
+
+sim_normal_small <- run_simulation_general(scenarios_normal_small,B=10000,rule=cond_power_rule_norm,test_statistic=diffmean,rdist=rnorm)
+save(scenarios_normal_small,file=vfile('~/repos/resamplingMCP/data/scenarios_normal_small'))
+
+scenarios_nonnormal_small <- expand.grid(n1=6,
+                               n=12,
+                               ncp=round(seq(0,1,.5),2),
+                               df=c(1,2,3),
+                               perms = 5000,
+                               resam = 1000)
+
+sim_nonnormal_small <- run_simulation_general(scenarios_nonnormal_small,B=100,rule=cond_power_rule_norm,test_statistic=diffmean,rdist=rnorm_hetero)
+save(sim_nonnormal_small,file=vfile("~/repos/resamplingMCP/data/sim_nonnormal_small"))
+
+
+scenarios_normal_large <- expand.grid(n1=50,
+                                      n=100,
+                                      mean=round(seq(0,1.2,.4),2),
+                                      sd=3:5,
+                                      perms = 50000,
+                                      resam = 10000)
+
+sim_normal_large <- run_simulation_general(scenarios_normal_large,B=10000,rule=cond_power_norm,test_statistic=diffmean,rdist=rnorm)
+save(sim_normal_large,file=vfile("~/repos/resamplingMCP/data/sim_normal_large"))
+
+scenarios_nonnormal_large <- expand.grid(n1=50,
+                               n=100,
+                               mean=round(seq(0,1.2,.4),2),
+                               sd=3:5,
+                               cshift = 0,
+                               csd = c(10,30),
+                               cprop = c(.1,.3),
+                               perms = 50000,
+                               resam = 10000)
+
+sim_nonnormal_large <- run_simulation_general(scenarios_nonnormal_large,B=10000,rule=cond_power_norm,test_statistic=diffmean,rdist=rnorm_cont)
+save(sim_nonnormal_large,file=vfile("~/repos/resamplingMCP/data/sim_nonnormal_large"))
+
+
 
 ```

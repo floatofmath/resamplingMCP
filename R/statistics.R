@@ -37,6 +37,26 @@ diffmean <- function(x,g){
     }
 }
 
+##' Sum of signed ranks, equivalent to the wilcoxon signed rank test.
+##'
+##' @template matrix_stats_details
+##' @title Sum of signed ranks
+##' @author Florian Klinglmueller
+##' @export
+signedranks <- function(x,g){
+    if(is.matrix(g)){
+        if(is.matrix(x)){
+            stop("Only one of g or x may be passed as a matrix")
+        }
+        colSums(rank(abs(x)) * (((g>0)*2)-1))
+    } else if(is.matrix(x)){
+        colSums(colRanks(abs(x)) * (((g>0)*2)-1))
+    } else {
+        sum(rank(abs(x)) * (((g>0)*2)-1))
+    }
+}
+
+
 ##' Median of paired differences. Usefull in one-sample tests. 
 ##'
 ##' @template matrix_stats_details
