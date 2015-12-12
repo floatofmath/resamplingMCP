@@ -31,18 +31,84 @@ library(flip)
 options(mc.cores=detectCores()-1)
 ```
 
-```{r basic code}
+```{r basic code,eval=F}
 # mclapply2(1:1000,function(i) adaptive_permtest2_os(rnorm_cont(40,mean=.5,cshift=0,csd=3),10,20,40,diffmean,perms=10000,resam=10)) %>% unlist %>% mean
 # mclapply2(1:1000,function(i) adaptive_permtest2_os(rnorm_cont(40,mean=.2,cshift=0,csd=3),20,40,40,signedranks,perms=10000,resam=10)) %>% unlist %>% mean
 B=1000
 n=40
-data <- matrix(rnorm_cont(B*n,mean=.5,cshift=0,csd=3),nrow=n)
-mean(flip(data,statTest="Wilcoxon",perms=10000)@res$`p-value`<.025)
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],20,40,40,signedranks,perms=10000)) %>% unlist %>% mean
-mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],20,40,40)) %>% unlist %>% mean
-mclapply2(1:B,function(i) (t.test(data[,i])$p.value < 0.025)) %>% unlist %>% mean
-mclapply2(1:B,function(i) (wilcox.test(data[,i])$p.value < 0.025)) %>% unlist %>% mean
+data <- matrix(rnorm_cont(B*n,mean=0.5,cshift=0,csd=3),nrow=n)
+mean(flip(data,statTest="Wilcoxon",perms=10000,tail=1)@res$`p-value`<.025)
+mean(flip(data,perms=10000,tail=1)@res$`p-value`<.025)
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],20,40,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],20,40,40,diffmean,perms=10000),mc.progress=T) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],20,40,40),mc.progress=F) %>% unlist %>% mean
+mclapply2(1:B,function(i) (t.test(data[,i],alternative='greater')$p.value < 0.025),mc.progress=F) %>% unlist %>% mean
+mclapply2(1:B,function(i) (wilcox.test(data[,i],alternative='greater')$p.value < 0.025),mc.progress=F) %>% unlist %>% mean
+
+```
+Some comments the Wilcoxon test is actually much better that the
+t-test and also than the invnorm test.
+
+```{r adaptive setting,eval=F}
+mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],15,30,40),mc.progress=F) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],15,30,40,diffmean,perms=10000),mc.progress=T) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],15,30,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],10,20,40),mc.progress=F) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],10,20,40,diffmean,perms=10000),mc.progress=T) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],10,20,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
+```
+
+In the adaptive setting this
+changes. Here the adaptive wilcoxon test looses quite a bit of power
+when the preplanned second stage size is small in comparison to the
+actual second stage sample size, such that the inverse normal
+combination test may be favourable at a certain stage.
 
 
+## Possible improvements of the adaptive signedrank test
+
+One may however improve the adaptive signedrank test in two
+ways.
+
+### 1. Subsampling the extended second stage
+
+
+This is already implemented in the package and has been shown to
+provide improvements in power.
+
+```{r subsampling,eval=F}
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],15,30,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],10,20,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
+```
+The subsampling approach may be further improved using a
+bootstrap procedure that also takes into account samples from the
+first stage. The latter approach may be problematic as this introduces
+dependeny between first and second stage data.
+
+
+2. and second by looking at the conditional distribution of the
+second stage ranks. Here the idea is to draw ranks for the second
+stage by keeping the order of the first stage ranks as well as the
+observed first stage signs.
+
+
+See below for one stap of the sampling process for the second stage
+data.
+
+We need to assume that the probability of the second stage data to
+fall between any of the first stage observations is the same. This
+obviously does not hold for all parent distributions! A way out may be
+bootstrap?
+
+
+```{r}
+x1 <- rnorm(10)
+r1 <- rank(x1)
+
+## preplanned second stage 10
+## sample one possible second stage outcome
+r2 <- sample(100,10)
+r2[r2 %in% r1*10] <- r2[r2 %in% r1*10]+1
+r2 <- rank(c(r2,r1*10))[1:10]
 
 ```
