@@ -1,0 +1,48 @@
+---
+title: "The surprising robustness of the inverse
+normal combination test under non-normality"
+subtitle: "Some numerical results"
+author: Florian Klinglmueller
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteIndexEntry{Vignette Title}
+  \usepackage[utf8]{inputenc}
+---
+
+During a recent investigation we found that the inverse normal
+combination test of stage-wise $t$-tests performs surprisingly well if
+the parent distribution is not normal. It is well known that the
+$t$-test controls the type I error for a wide range of parent
+distribution. This robustness, however, comes at the price of reduced
+power. As we will show the inverse normal combination test of
+stagewise t-tests does actually outperform many nonparametric tests
+in terms of power when the parent distribution is non-normal.
+
+```{r}
+library(magrittr)
+library(plyr)
+library(dplyr)
+library(pander)
+library(parallel)
+library(bt88.03.704)
+library(resamplingMCP)
+library(flip)
+options(mc.cores=detectCores()-1)
+```
+
+```{r basic code}
+# mclapply2(1:1000,function(i) adaptive_permtest2_os(rnorm_cont(40,mean=.5,cshift=0,csd=3),10,20,40,diffmean,perms=10000,resam=10)) %>% unlist %>% mean
+# mclapply2(1:1000,function(i) adaptive_permtest2_os(rnorm_cont(40,mean=.2,cshift=0,csd=3),20,40,40,signedranks,perms=10000,resam=10)) %>% unlist %>% mean
+B=1000
+n=40
+data <- matrix(rnorm_cont(B*n,mean=.5,cshift=0,csd=3),nrow=n)
+mean(flip(data,statTest="Wilcoxon",perms=10000)@res$`p-value`<.025)
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],20,40,40,signedranks,perms=10000)) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],20,40,40)) %>% unlist %>% mean
+mclapply2(1:B,function(i) (t.test(data[,i])$p.value < 0.025)) %>% unlist %>% mean
+mclapply2(1:B,function(i) (wilcox.test(data[,i])$p.value < 0.025)) %>% unlist %>% mean
+
+
+
+```

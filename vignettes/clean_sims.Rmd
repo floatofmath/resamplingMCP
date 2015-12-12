@@ -1,6 +1,6 @@
 ---
-title: "Simulation studies on the robustness of adaptive tests"
-subtitle: "Numerical results"
+title: "Simulation studies: Conditional permutation vs inverse normal combiantion tests"
+subtitle: "Continuous data"
 author: Florian Klinglmueller
 output: rmarkdown::html_vignette
 vignette: >
