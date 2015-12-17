@@ -344,6 +344,9 @@ scenarios_normal_large <- expand.grid(n1=50,
 sim_normal_large <- run_simulation_general(scenarios_normal_large,B=5000,rule=cond_power_rule_norm,test_statistic=diffmean,rdist=rnorm)
 save(sim_normal_large,file=vfile("~/repos/resamplingMCP/data/sim_normal_large"))
 
+sim_normal_sr_large <- run_simulation_general(scenarios_normal_large,B=5000,rule=cond_power_rule_norm,test_statistic=signedranks,rdist=rnorm)
+save(sim_normal_sr_large,file=vfile("~/repos/resamplingMCP/data/sim_normal_sr_large"))
+
 scenarios_nonnormal_large <- expand.grid(n1=50,
                                n=100,
                                mean=round(seq(0,1.2,.4),2),
@@ -356,6 +359,9 @@ scenarios_nonnormal_large <- expand.grid(n1=50,
 
 sim_nonnormal_large <- run_simulation_general(scenarios_nonnormal_large,B=5000,rule=cond_power_rule_norm,test_statistic=diffmean,rdist=rnorm_cont)
 save(sim_nonnormal_large,file=vfile("~/repos/resamplingMCP/data/sim_nonnormal_large"))
+
+sim_nonnormal_sr_large <- run_simulation_general(scenarios_nonnormal_large,B=5000,rule=cond_power_rule_norm,test_statistic=signedranks,rdist=rnorm_cont)
+save(sim_nonnormal_sr_large,file=vfile("~/repos/resamplingMCP/data/sim_nonnormal_sr_large"))
 
 
 scenarios_nonnormal_small <- expand.grid(n1=6,

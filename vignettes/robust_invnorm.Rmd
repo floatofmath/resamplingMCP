@@ -29,33 +29,56 @@ library(bt88.03.704)
 library(resamplingMCP)
 library(flip)
 options(mc.cores=detectCores()-1)
+##' Adaptive permutation test one-sample problems
+##'
+##' @title One-sample adaptive permutation test
+##' @template onesample_sims
+##' @param combination_function Function to combine stage-wise (permutation) p-values
+##' @param perms Maximum number of permutations to use when computing permutation p-values and conditional error rates
+##' @author Florian Klinglmueller
+##' @export
+adaptive_permtest2_os <- function(x,n1,n,ne,test_statistic,perms=50000,resam=100,alpha=0.025){
+    if(ne>n){
+        xs <- split(x,rep(1:3,c(n1,n-n1,ne-n)))
+        gs <- split(sign(x)>0,rep(1:3,c(n1,n-n1,ne-n)))
+        A <- permutation_CER2(xs[[1]],gs[[1]],xs[[2]],xs[[3]],test_statistic,one_sample=TRUE,restricted=FALSE,
+                              permutations=perms,subsamples=resam,alpha=alpha)
+        q <- perm_test(xs[[2]],xs[[3]],gs[[2]],gs[[3]],test_statistic,restricted=FALSE,B=perms)
+        return(A>=q)
+    } else {
+        xs <- split(x,rep(1:2,c(n1,ne-n1)))
+        gs <- split(sign(x)>0,rep(1:2,c(n1,ne-n1)))
+        return(alpha>=perm_test(xs[[1]],xs[[2]],gs[[1]],gs[[2]],test_statistic,restricted=FALSE,B=perms))
+    }
+}
+
 ```
 
-```{r basic code,eval=F}
+```{r basic code}
 # mclapply2(1:1000,function(i) adaptive_permtest2_os(rnorm_cont(40,mean=.5,cshift=0,csd=3),10,20,40,diffmean,perms=10000,resam=10)) %>% unlist %>% mean
 # mclapply2(1:1000,function(i) adaptive_permtest2_os(rnorm_cont(40,mean=.2,cshift=0,csd=3),20,40,40,signedranks,perms=10000,resam=10)) %>% unlist %>% mean
 B=1000
 n=40
 data <- matrix(rnorm_cont(B*n,mean=0.5,cshift=0,csd=3),nrow=n)
-mean(flip(data,statTest="Wilcoxon",perms=10000,tail=1)@res$`p-value`<.025)
-mean(flip(data,perms=10000,tail=1)@res$`p-value`<.025)
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],20,40,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],20,40,40,diffmean,perms=10000),mc.progress=T) %>% unlist %>% mean
-mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],20,40,40),mc.progress=F) %>% unlist %>% mean
-mclapply2(1:B,function(i) (t.test(data[,i],alternative='greater')$p.value < 0.025),mc.progress=F) %>% unlist %>% mean
-mclapply2(1:B,function(i) (wilcox.test(data[,i],alternative='greater')$p.value < 0.025),mc.progress=F) %>% unlist %>% mean
+c(permW=mean(flip(data,statTest="Wilcoxon",perms=10000,tail=1)@res$`p-value`<.025),
+  permT=mean(flip(data,perms=10000,tail=1)@res$`p-value`<.025),
+  apermW=mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],20,40,40,signedranks,perms=10000),mc.progress=F) %>% unlist %>% mean,
+  apermT=mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],20,40,40,diffmean,perms=10000),mc.progress=F) %>% unlist %>% mean,
+  invnorm=mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],20,40,40),mc.progress=F) %>% unlist %>% mean,
+  ttest=mclapply2(1:B,function(i) (t.test(data[,i],alternative='greater')$p.value < 0.025),mc.progress=F) %>% unlist %>% mean,
+  wilcox=mclapply2(1:B,function(i) (wilcox.test(data[,i],alternative='greater')$p.value < 0.025),mc.progress=F) %>% unlist %>% mean) -> nonadaptive
 
 ```
 Some comments the Wilcoxon test is actually much better that the
 t-test and also than the invnorm test.
 
-```{r adaptive setting,eval=F}
+```{r adaptive setting}
 mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],15,30,40),mc.progress=F) %>% unlist %>% mean
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],15,30,40,diffmean,perms=10000),mc.progress=T) %>% unlist %>% mean
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],15,30,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],15,30,40,diffmean,perms=10000),mc.progress=F) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],15,30,40,signedranks,perms=10000),mc.progress=F) %>% unlist %>% mean
 mclapply2(1:B,function(i) adaptive_invnormtest_os(data[,i],10,20,40),mc.progress=F) %>% unlist %>% mean
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],10,20,40,diffmean,perms=10000),mc.progress=T) %>% unlist %>% mean
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],10,20,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],10,20,40,diffmean,perms=10000),mc.progress=F) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],10,20,40,signedranks,perms=10000),mc.progress=F) %>% unlist %>% mean
 ```
 
 In the adaptive setting this
@@ -76,9 +99,9 @@ ways.
 This is already implemented in the package and has been shown to
 provide improvements in power.
 
-```{r subsampling,eval=F}
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],15,30,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
-mclapply2(1:B,function(i) adaptive_permtest_os(data[,i],10,20,40,signedranks,perms=10000),mc.progress=T) %>% unlist %>% mean
+```{r subsampling}
+mclapply2(1:B,function(i) adaptive_permtest2_os(data[,i],15,30,40,signedranks,perms=10000),mc.progress=F) %>% unlist %>% mean
+mclapply2(1:B,function(i) adaptive_permtest2_os(data[,i],10,20,40,signedranks,perms=10000),mc.progress=F) %>% unlist %>% mean
 ```
 The subsampling approach may be further improved using a
 bootstrap procedure that also takes into account samples from the
